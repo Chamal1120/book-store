@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "title": "Men Are From Mars",
+    "author": "John Gray",
+    "cover": "/src/assets/books/men-are-from-mars.jpg",
+    "description": "A practical guide to improving communication and understanding in relationships.",
+    "price": 9.99
+  },
+  {
+    "id": 2,
+    "title": "Rich Dad Poor Dad",
+    "author": "Robert Kiyosaki",
+    "cover": "/src/assets/books/rich-dad-poor-dad.jpg",
+    "description": "What the rich teach their kids about money that the poor and middle class do not.",
+    "price": 14.99
+  },
+  {
+    "id": 3,
+    "title": "The Alchemist",
+    "author": "Paulo Coelho",
+    "cover": "/src/assets/books/the-alchemist.jpg",
+    "description": "A magical fable about following your dreams.",
+    "price": 12.99
+  },
+  {
+    "id": 4,
+    "title": "The Doomsday Conspiracy",
+    "author": "Sidney Sheldon",
+    "cover": "/src/assets/books/the-doomsday-conspiracy.jpg",
+    "description": "A thrilling novel of intrigue and conspiracy.",
+    "price": 11.99
+  },
+  {
+    "id": 5,
+    "title": "Who Killed Change?",
+    "author": "Ken Blanchard",
+    "cover": "/src/assets/books/who-killed-change.jpg",
+    "description": "A unique business fable about managing organizational change.",
+    "price": 8.99
+  },
+  {
+    "id": 6,
+    "title": "The Power of Habit",
+    "author": "Charles Duhigg",
+    "cover": "/src/assets/books/the-power-of-habit.jpg",
+    "description": "An exploration of the science behind habit formation and how we can change habits.",
+    "price": 13.99
+  },
+  {
+    "id": 7,
+    "title": "Atomic Habits",
+    "author": "James Clear",
+    "cover": "/src/assets/books/atomic-habits.jpg",
+    "description": "A proven way to build good habits and break bad ones.",
+    "price": 15.99
+  },
+  {
+    "id": 8,
+    "title": "The Four Agreements",
+    "author": "Don Miguel Ruiz",
+    "cover": "/src/assets/books/the-four-agreements.jpg",
+    "description": "A practical guide to personal freedom based on ancient Toltec wisdom.",
+    "price": 9.99
+  },  
+  {
+    "id": 9,
+    "title": "Educated",
+    "author": "Tara Westover",
+    "cover": "/src/assets/books/educated.jpg",
+    "description": "A memoir about growing up in a strict and isolated family and seeking education.",
+    "price": 17.99
+  },
+  {
+    "id": 10,
+    "title": "Sapiens: A Brief History of Humankind",
+    "author": "Yuval Noah Harari",
+    "cover": "/src/assets/books/sapiens.jpg",
+    "description": "A historical account of humanity, tracing our evolution from ancient times to modern societies.",
+    "price": 18.99
+  }
+]
