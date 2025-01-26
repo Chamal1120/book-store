@@ -1,28 +1,29 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import NavBar from '../components/navBar';
-import Footer from '../components/footer';
+import React, { useState, useEffect } from 'react';
 import HomeBookCard from '../components/homeBookCard';
-import books from '../assets/books.json';
+import Navbar from '../components/navBar';
+import Footer from '../components/footer';
+
+import booksData from '../assets/books.json';
 
 const Home = () => {
+  const [books, setBooks] = useState([]);
+
+  useEffect(() => {
+    // Set the books data from the books.json file
+    setBooks(booksData);
+  }, []);
+
   return (
-    <div className="flex flex-col min-h-screen">
-      <NavBar />
-      <main className="flex-grow container mx-auto py-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div>
+      <Navbar />
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">Featured Books</h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
           {books.map((book) => (
-            <Link key={book.id} to={`/book/${book.id}`}>
-              <HomeBookCard
-                cover={book.cover}
-                title={book.title}
-                author={book.author}
-                price={book.price}
-              />
-            </Link>
+            <HomeBookCard key={book.id} book={book} />
           ))}
         </div>
-      </main>
+      </div>
       <Footer />
     </div>
   );

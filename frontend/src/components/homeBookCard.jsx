@@ -15,10 +15,10 @@ const HomeBookCard = ({ book }) => {
     >
       <img
         src={book.cover}
-        alt={book.name}
+        alt={book.title}
         className="w-full h-48 object-cover rounded-md"
       />
-      <h2 className="mt-2 text-lg font-semibold">{book.name}</h2>
+      <h2 className="mt-2 text-lg font-semibold">{book.title}</h2>
       <p className="text-sm text-gray-600">by {book.author}</p>
       <p className="mt-1 font-bold text-blue-600">${book.price}</p>
     </div>
