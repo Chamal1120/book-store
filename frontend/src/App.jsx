@@ -1,7 +1,18 @@
-export default function App() {
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/home';
+import BookPage from './pages/bookPage';
+import NoPage from './pages/noPage';
+
+function App() {
   return (
-    <h1 className="text-3xl font-bold underline">
-      Hello world!
-    </h1>
-  )
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/book/:id" element={<BookPage />} />
+        <Route path="*" element={<NoPage />} />
+      </Routes>
+    </Router>
+  );
 }
+
+export default App;

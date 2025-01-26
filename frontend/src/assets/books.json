@@ -1,0 +1,43 @@
+[
+    {
+      "id": 1,
+      "title": "Men Are From Mars",
+      "author": "John Gray",
+      "cover": "/src/assets/books/men-are-from-mars.jpg",
+      "description": "A practical guide to improving communication and understanding in relationships.",
+      "price": 9.99
+    },
+    {
+      "id": 2,
+      "title": "Rich Dad Poor Dad",
+      "author": "Robert Kiyosaki",
+      "cover": "/src/assets/books/rich-dad-poor-dad.jpg",
+      "description": "What the rich teach their kids about money that the poor and middle class do not.",
+      "price": 14.99
+    },
+    {
+      "id": 3,
+      "title": "The Alchemist",
+      "author": "Paulo Coelho",
+      "cover": "/src/assets/books/the-alchemist.jpg",
+      "description": "A magical fable about following your dreams.",
+      "price": 12.99
+    },
+    {
+      "id": 4,
+      "title": "The Doomsday Conspiracy",
+      "author": "Sidney Sheldon",
+      "cover": "/src/assets/books/the-doomsday-conspiracy.jpg",
+      "description": "A thrilling novel of intrigue and conspiracy.",
+      "price": 11.99
+    },
+    {
+      "id": 5,
+      "title": "Who Killed Change?",
+      "author": "Ken Blanchard",
+      "cover": "/src/assets/books/who-killed-change.jpg",
+      "description": "A unique business fable about managing organizational change.",
+      "price": 8.99
+    }
+  ]
+  
