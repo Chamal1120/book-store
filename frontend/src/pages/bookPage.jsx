@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import NavBar from '../components/navBar';
 import Footer from '../components/footer';
-import books from '../assets/books.json'; // Same JSON file as in Home.
+import books from '../assets/books.json'; 
 
 const BookPage = () => {
   const { id } = useParams();
@@ -21,22 +21,30 @@ const BookPage = () => {
     <div className="flex flex-col min-h-screen">
       <NavBar />
       <main className="flex-grow container mx-auto py-6">
-        <div className="max-w-4xl mx-auto p-6 border rounded-lg shadow-lg">
-          <img
-            src={book.cover}
-            alt={book.title}
-            className="w-full h-80 object-cover rounded-md"
-          />
-          <h1 className="text-2xl font-bold mt-4">{book.title}</h1>
-          <p className="text-lg text-gray-700 mt-2">Author: {book.author}</p>
-          <p className="text-lg text-gray-700 mt-2">Description: {book.description}</p>
-          <p className="text-lg font-semibold text-green-600 mt-2">Price: ${book.price}</p>
-          <button
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            onClick={() => alert('Added to cart!')}
-          >
-            Add to Cart
-          </button>
+        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 p-6 border rounded-lg shadow-lg">
+          {/* Cover Image */}
+          <div className="flex justify-center">
+            <img
+              src={book.cover}
+              alt={book.title}
+              className="w-full h-auto max-h-96 object-contain rounded-md"
+            />
+          </div>
+
+          {/* Book Details */}
+          <div className="flex flex-col justify-center mr-16">
+            <h1 className="text-3xl font-bold">{book.title}</h1>
+            <p className="text-lg text-gray-700 mt-4">Author: <span className="font-medium">{book.author}</span></p>
+            <p className="text-lg text-gray-700 mt-4">Description:</p>
+            <p className="text-base text-gray-600 mt-2 text-justify">{book.description}</p>
+            <p className="text-2xl font-semibold text-green-600 mt-6">Price: ${book.price}</p>
+            <button
+              className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+              onClick={() => alert('Added to cart!')}
+            >
+              Add to Cart
+            </button>
+          </div>
         </div>
       </main>
       <Footer />
