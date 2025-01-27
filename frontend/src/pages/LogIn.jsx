@@ -1,25 +1,48 @@
-import { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
-import googleLogo from './assets/chrome.png';
+import { useAuth } from '../context/AuthContext';
 
-function Login() {
-  const [email, setEmail] = useState('');
+const LogIn = () => {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [submitClicked, setSubmitClicked] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
+
+  useEffect(() => {
+    if (submitClicked) {
+      const loginUser = async () => {
+        try {
+          const response = await fetch('http://localhost:3000/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+            credentials: 'include',
+          });
+
+          const result = await response.json();
+          if (result.user) {
+            login(result.user);
+            navigate('/');
+          } else {
+            console.error('Login failed:', result.message);
+          }
+        } catch (error) {
+          console.error('Error:', error);
+        } finally {
+          setSubmitClicked(false);
+        }
+      };
+
+      loginUser();
+    }
+  }, [submitClicked, username, password, navigate, login]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios
-      .post('http://localhost:3001/Login', { email, password })
-      .then((result) => {
-        console.log(result);
-        if (result.data === 'Success') {
-          navigate('/Home');
-        }
-      })
-      .catch((err) => console.log(err));
+    setSubmitClicked(true);
   };
 
   return (
@@ -30,15 +53,16 @@ function Login() {
         </h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-semibold mb-2">
-              Email
+            <label htmlFor="username" className="block text-sm font-semibold mb-2">
+              Username
             </label>
             <input
-              type="email"
-              id="email"
-              placeholder="Enter Email"
+              type="text"
+              id="username"
+              placeholder="Enter Username"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
             />
           </div>
@@ -51,6 +75,7 @@ function Login() {
               id="password"
               placeholder="Enter Password"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
@@ -62,22 +87,10 @@ function Login() {
             Login
           </button>
         </form>
-        <div className="my-4 text-center">
-                  <Link
-                    to="#"
-                    className="flex items-center justify-center text-blue-500 hover:underline"
-                  >
-                    <img
-                      src={googleLogo} 
-                      alt="Google logo"
-                      className="mr-2 w-5 h-5"
-                    />
-                    Continue with Google
-                  </Link>
-                </div>
       </div>
     </div>
   );
-}
+};
 
-export default Login;
+export default LogIn;
+

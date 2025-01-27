@@ -1,23 +1,46 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import googleLogo from './assets/chrome.png';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
-
-function Signup() {
+const Register = () => {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [submitClicked, setSubmitClicked] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (submitClicked) {
+      const registerUser = async () => {
+        try {
+          const response = await fetch('http://localhost:3000/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username: name, password, confirmPassword }),
+            credentials: 'include',
+          });
+
+          const result = await response.json();
+          if (result.user) {
+            navigate('/Login'); // Redirect to login after successful registration
+          } else {
+            console.error(result.message);
+          }
+        } catch (error) {
+          console.error('Error:', error);
+        } finally {
+          setSubmitClicked(false);
+        }
+      };
+
+      registerUser();
+    }
+  }, [submitClicked, name, password, confirmPassword, navigate]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios
-      .post('http://localhost:3001/', { name, email, password })
-      .then((result) => console.log(result))
-      .catch((err) => console.log(err));
-    navigate('/Login');
+    setSubmitClicked(true);
   };
 
   return (
@@ -37,25 +60,12 @@ function Signup() {
               placeholder="Enter Name"
               autoComplete="off"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-semibold mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              placeholder="Enter Email"
-              autoComplete="off"
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-6">
             <label htmlFor="password" className="block text-sm font-semibold mb-2">
               Password
             </label>
@@ -64,7 +74,22 @@ function Signup() {
               id="password"
               placeholder="Enter Password"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="confirmPassword" className="block text-sm font-semibold mb-2">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              placeholder="Confirm Password"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
           </div>
@@ -75,33 +100,16 @@ function Signup() {
             Register
           </button>
         </form>
-
-        <div className="my-4 text-center">
-          <Link
-            to="#"
-            className="flex items-center justify-center text-blue-500 hover:underline"
-          >
-            <img
-              src={googleLogo} 
-              alt="Google logo"
-              className="mr-2 w-5 h-5"
-            />
-            Continue with Google
-          </Link>
-        </div>
-
         <p className="mt-4 text-center text-sm">
           Already have an account?{' '}
-          <Link
-            to="/Login"
-            className="text-blue-500 hover:underline"
-          >
+          <Link to="/Login" className="text-blue-500 hover:underline">
             Login
           </Link>
         </p>
       </div>
     </div>
   );
-}
+};
 
-export default Signup;
+export default Register;
+
