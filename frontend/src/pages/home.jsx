@@ -2,25 +2,46 @@ import React, { useState, useEffect } from 'react';
 import HomeBookCard from '../components/homeBookCard';
 import Navbar from '../components/navBar';
 import Footer from '../components/footer';
-import booksData from '../assets/books.json';
 
 const Home = () => {
   const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    setBooks(booksData);
+    const fetchBooks = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/');
+        
+        if (!response.ok) {
+          throw new Error(`Error fetching books: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        setBooks(data.books || []);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooks();
   }, []);
 
   return (
     <div>
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        {/* <h1 className="text-3xl font-bold mb-8">Featured Books</h1> */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
-          {books.map((book) => (
-            <HomeBookCard key={book.id} book={book} />
-          ))}
-        </div>
+        {loading && <p>Loading books...</p>}
+        {error && <p className="text-red-500">Error: {error}</p>}
+        {!loading && !error && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
+            {books.map((book) => (
+              <HomeBookCard key={book.id} book={book} />
+            ))}
+          </div>
+        )}
       </div>
       <Footer />
     </div>
