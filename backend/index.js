@@ -69,6 +69,11 @@ function verifyPassword(storedHash, password) {
   });
 }
 
+// me Route: A helper route for AuthContext of the frontend
+app.get('/me', checkAuth, (req, res) => {
+  res.json(req.session.user);
+});
+
 // Home Route
 app.get("/", async (_, res) => {
   try {
