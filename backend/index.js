@@ -1,12 +1,20 @@
 const bodyParser = require('body-parser');
 const express = require('express');
 const session = require('express-session');
+const axios = require('axios');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 require('dotenv').config();
 
+const cors = require('cors');
 const app = express()
 const port = 3000
+
+// Enable CORS
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+}));
 
 // Middlewares
 
@@ -62,12 +70,27 @@ function verifyPassword(storedHash, password) {
 }
 
 // Home Route
-app.get("/home", async (_, res) => {
+app.get("/", async (_, res) => {
   try {
     const result = await pool.query("SELECT * FROM books");
     const books = result.rows;
 
-    res.status(200).json({ books });
+    // Fetch thumbnail URL for each book using Open Library API
+    const updatedBooks = await Promise.all(books.map(async (book) => {
+      const isbn = book.isbn;
+      
+      const response = await axios.get(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+      
+      const cover_url = response.data[`ISBN:${isbn}`]?.cover.medium;
+     
+      // Append the cover url to the book
+      return {
+        ...book,
+        cover: cover_url || '',
+      };
+    }));
+
+    res.status(200).json({ books: updatedBooks });
   } catch (error) {
     console.error("Error fetching books:", error);
     res.status(500).json({ message: "Server error" });
