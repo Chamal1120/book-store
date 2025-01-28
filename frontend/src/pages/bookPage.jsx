@@ -1,15 +1,16 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import NavBar from '../components/navBar';
 import Footer from '../components/footer';
+
 import books from '../assets/books.json';
 
 const BookPage = () => {
-  const { id } = useParams();
+  
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Find the book using the id from the URL.
-  const book = books.find((b) => b.id === parseInt(id));
+  const { book } = location.state || {};
 
   // Redirect to the home page if the book is not found.
   if (!book) {
