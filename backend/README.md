@@ -46,12 +46,14 @@ CREATE TABLE books (
     author VARCHAR(255) NOT NULL,
     genre VARCHAR(100),
     price NUMERIC(10, 2) NOT NULL
+    isbn VARCHAR(13) NOT NULL
 );
 
 CREATE TABLE purchased_books (
     purchase_id SERIAL PRIMARY KEY,
     username VARCHAR(100) REFERENCES users(username),
     bookname VARCHAR(255),
+    isbn VARCHAR(13),
     price NUMERIC(10, 2),
     purchased_date TIMESTAMP DEFAULT NOW()
 );
@@ -71,7 +73,7 @@ pnpm run dev
 
 # Testing Routes
 
-You can test the routes using testng tool like Postman, REST cleint or the following curl commands.
+You can test the routes using a API testng tool like Postman, REST client or the following curl commands.
 
 1. /register
 
