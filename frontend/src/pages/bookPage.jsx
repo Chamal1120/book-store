@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import NavBar from '../components/navBar';
 import Footer from '../components/footer';
-import books from '../assets/books.json'; 
+import books from '../assets/books.json';
 
 const BookPage = () => {
   const { id } = useParams();
@@ -23,13 +23,14 @@ const BookPage = () => {
       <main className="flex-grow container mx-auto py-6">
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 p-6 border rounded-lg shadow-lg">
           {/* Cover Image */}
-          <div className="flex justify-center">
+          <div className="flex justify-center mt-20 h-full">
             <img
               src={book.cover}
               alt={book.title}
               className="w-full h-auto max-h-96 object-contain rounded-md"
             />
           </div>
+
 
           {/* Book Details */}
           <div className="flex flex-col justify-center mr-16">
