@@ -45,7 +45,7 @@ CREATE TABLE books (
     bookname VARCHAR(255) NOT NULL,
     author VARCHAR(255) NOT NULL,
     genre VARCHAR(100),
-    price NUMERIC(10, 2) NOT NULL
+    price NUMERIC(10, 2) NOT NULL,
     isbn VARCHAR(13) NOT NULL
 );
 
