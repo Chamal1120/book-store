@@ -1,53 +1,38 @@
-const bodyParser = require('body-parser');
-const express = require('express');
-const session = require('express-session');
-const axios = require('axios');
-const crypto = require('crypto');
-const { Pool } = require('pg');
-require('dotenv').config();
+const express = require("express");
+const bodyParser = require("body-parser");
+const crypto = require("crypto");
+const AWS = require("aws-sdk");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+const cors = require("cors");
+const awsServerlessExpress = require("aws-serverless-express");
 
-const cors = require('cors');
-const app = express()
-const port = 3000
+const app = express();
 
 // Enable CORS
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+  }),
+);
 
-// Middlewares
+// JWT Secret Key
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_not_secure_string";
 
-// Setup Session
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false }
-}))
+// Base S3 URL
+const S3_BUCKET_URL = "https://bookstore-images.s3.amazonaws.com";
 
-// Parses Json data
+// Check if running locally
+const isLocal = process.env.NODE_ENV === "development";
+
+// Body parser middleware
 app.use(bodyParser.json());
 
-// Check for the authentication
-function checkAuth(req, res, next) {
-  if (req.session.user) {
-    next();
-  } else {
-    res.status(401).json({ message: "Unauthorized" });
-  }
-}
+// Initialize DynamoDB Document Client
+const dynamoDB = new AWS.DynamoDB.DocumentClient();
 
-// Postgresql connection pool
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
-
-// Helper function: Hash password with scrypt
+// Helper function: Hash password
 function hashPassword(password) {
   return new Promise((resolve, reject) => {
     const salt = crypto.randomBytes(16).toString("hex");
@@ -69,99 +54,64 @@ function verifyPassword(storedHash, password) {
   });
 }
 
-// me Route: A helper route for AuthContext of the frontend
-app.get('/me', checkAuth, (req, res) => {
-  res.json(req.session.user);
-});
+// Helper function: Generate JWT
+function generateJWT(user) {
+  const payload = {
+    username: user.username,
+  };
+  const options = {
+    expiresIn: "1h", // JWT expiration time
+  };
+  return jwt.sign(payload, JWT_SECRET, options);
+}
+
+// Helper function: Verify JWT
+function verifyJWT(token) {
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (error) {
+    return null;
+  }
+}
+
+// Middleware: Authenticate JWT from Authorization header
+function authenticateJWT(req, res, next) {
+  const token = req.headers["authorization"]?.split(" ")[1]; // Bearer token
+
+  if (!token) {
+    return res.status(401).json({ message: "Authorization token is missing" });
+  }
+
+  const decoded = verifyJWT(token);
+  if (!decoded) {
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
+
+  req.user = decoded; // Attach user info to request object for use in route handlers
+  next();
+}
 
 // Home Route
 app.get("/", async (_, res) => {
   try {
-    const result = await pool.query("SELECT * FROM books");
-    const books = result.rows;
+    const result = await dynamoDB.scan({ TableName: "Books" }).promise();
+    const books = result.Items;
 
-    // Fetch thumbnail URL for each book using Open Library API
-    const updatedBooks = await Promise.all(books.map(async (book) => {
+    // Generate image URLs dynamically based on environment
+    const updatedBooks = books.map((book) => {
       const isbn = book.isbn;
-      
-      const response = await axios.get(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
-      
-      const cover_url = response.data[`ISBN:${isbn}`]?.cover.medium;
-     
-      // Append the cover url to the book
+      const localImagePath = `../covers/${isbn}.jpg`;
+      const s3ImagePath = `${S3_BUCKET_URL}/${isbn}.jpg`;
+
       return {
         ...book,
-        cover: cover_url || '',
+        cover: isLocal ? localImagePath : s3ImagePath,
       };
-    }));
+    });
 
     res.status(200).json({ books: updatedBooks });
   } catch (error) {
     console.error("Error fetching books:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Protected Route: Purchase
-app.post("/purchase", checkAuth, async (req, res) => {
-  const { bookId } = req.body;
-
-  if (!bookId) {
-    return res.status(400).json({ message: "Book ID is required" });
-  }
-
-  try {
-    // Get book details by ID
-    const bookResult = await pool.query("SELECT * FROM books WHERE id = $1", [bookId]);
-    const book = bookResult.rows[0];
-
-    if (!book) {
-      return res.status(404).json({ message: "Book not found" });
-    }
-
-    // Get logged-in user's username from session
-    const username = req.session.user.username;
-
-    // Insert into purchased_books table
-    const insertResult = await pool.query(
-      "INSERT INTO purchased_books (username, bookname, price) VALUES ($1, $2, $3) RETURNING purchase_id, username, bookname, price, purchased_date",
-      [username, book.bookname, book.price]
-    );
-
-    const purchasedBook = insertResult.rows[0];
-
-    res.status(201).json({
-      message: "Book purchased successfully",
-      purchasedBook,
-    });
-  } catch (error) {
-    console.error("Error purchasing book:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Protected Route: purchase-history
-app.get("/purchase-history", checkAuth, async (req, res) => {
-  try {
-    // Get logged-in user's username from session
-    const username = req.session.user.username;
-
-    // Query to fetch the purchase history of the logged-in user
-    const result = await pool.query(
-      "SELECT * FROM purchased_books WHERE username = $1 ORDER BY purchased_date DESC",
-      [username]
-    );
-
-    const purchaseHistory = result.rows;
-
-    if (purchaseHistory.length === 0) {
-      return res.status(404).json({ message: "No purchase history found" });
-    }
-
-    // Send the user's purchase history
-    res.status(200).json({ purchaseHistory });
-  } catch (error) {
-    console.error("Error fetching purchase history:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -180,25 +130,40 @@ app.post("/register", async (req, res) => {
   }
 
   try {
-    // Check if username already exists
-    const userCheck = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
-    if (userCheck.rows.length > 0) {
+    // Check if the user already exists
+    const userCheck = await dynamoDB
+      .get({
+        TableName: "Users",
+        Key: { username },
+      })
+      .promise();
+
+    if (userCheck.Item) {
       return res.status(400).json({ message: "Username already exists" });
     }
 
-    // Hash the password
     const hashedPassword = await hashPassword(password);
 
-    // Insert user into the database
-    const newUser = await pool.query(
-      "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, username, created_at",
-      [username, hashedPassword]
-    );
+    // Create a new user
+    const newUser = {
+      username,
+      password: hashedPassword,
+      created_at: new Date().toISOString(),
+    };
 
-    // Send success response
+    await dynamoDB
+      .put({
+        TableName: "Users",
+        Item: newUser,
+      })
+      .promise();
+
+    // Generate JWT token for the new user
+    const token = generateJWT(newUser);
+
     res.status(201).json({
       message: "User registered successfully",
-      user: newUser.rows[0],
+      token, // Send the JWT token to the client
     });
   } catch (error) {
     console.error("Error registering user:", error);
@@ -210,35 +175,38 @@ app.post("/register", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
-  // Input validation
   if (!username || !password) {
-    return res.status(400).json({ message: "Username and password are required" });
+    return res
+      .status(400)
+      .json({ message: "Username and password are required" });
   }
 
   try {
-    // Find user by username
-    const userResult = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
-    const user = userResult.rows[0];
+    const userResult = await dynamoDB
+      .get({
+        TableName: "Users",
+        Key: { username },
+      })
+      .promise();
+
+    const user = userResult.Item;
 
     if (!user) {
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
-    // Verify password
     const isPasswordValid = await verifyPassword(user.password, password);
 
     if (!isPasswordValid) {
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
-    // Store the user ID in the session
-    req.session.user = { id: user.id, username: user.username };
+    // Generate JWT token for the logged-in user
+    const token = generateJWT(user);
 
-    // Send success response with user info (excluding password)
-    const { password: _, ...userInfo } = user;  // Exclude password from the response
     res.status(200).json({
       message: "Login successful",
-      user: userInfo
+      token, // Send the JWT token to the client
     });
   } catch (error) {
     console.error("Error logging in user:", error);
@@ -246,18 +214,83 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// Logout route
-app.post("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({ message: "Error logging out" });
+// Get User Info Route
+app.get("/me", authenticateJWT, async (req, res) => {
+  try {
+    const userResult = await dynamoDB
+      .get({
+        TableName: "Users",
+        Key: { username: req.user.username },
+      })
+      .promise();
+
+    const user = userResult.Item;
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json({ message: "Logged out successfully" });
-  });
+
+    res.json({ user: { username: user.username } });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
+// Protected Route: Purchase
+app.post("/purchase", authenticateJWT, async (req, res) => {
+  const { bookId } = req.body;
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  if (!bookId) {
+    return res.status(400).json({ message: "Book ID is required" });
+  }
+
+  try {
+    const bookResult = await dynamoDB
+      .get({
+        TableName: "Books",
+        Key: { id: bookId },
+      })
+      .promise();
+
+    const book = bookResult.Item;
+
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    const purchase = {
+      username: req.user.username,
+      bookname: book.bookname,
+      price: book.price,
+      purchased_date: new Date().toISOString(),
+    };
+
+    await dynamoDB
+      .put({
+        TableName: "PurchasedBooks",
+        Item: purchase,
+      })
+      .promise();
+
+    res.status(201).json({
+      message: "Book purchased successfully",
+      purchasedBook: purchase,
+    });
+  } catch (error) {
+    console.error("Error purchasing book:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 });
+
+// Logout Route
+app.post("/logout", (_, res) => {
+  res.status(200).json({ message: "Logged out successfully" });
+});
+
+// Lambda handler for Express
+const server = awsServerlessExpress.createServer(app);
+
+// Lambda function handler
+exports.handler = (event, context) => {
+  return awsServerlessExpress.proxy(server, event, context);
+};
