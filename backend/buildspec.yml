@@ -11,14 +11,16 @@ phases:
 
   build:
     commands:
+      - cd backend
       - echo "Running database migrations..."
       - npx node-pg-migrate up --database-url postgres://$DB_USERNAME:$DB_PASSWORD@$DB_HOST/$DB_NAME
       - echo "Pruning dev dependencies..."
       - npm prune --production
       - echo "Creating Lambda deployment package..."
-      - zip -r lambda.zip . -x ".git/*"
+      - zip -r lambda.zip . -x ".git/*" "tests/*" "*.md"
 
   post_build:
     commands:
+      - cd backend
       - echo "Updating Lambda function..."
       - aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://lambda.zip
