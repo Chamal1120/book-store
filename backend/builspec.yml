@@ -1,0 +1,24 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - cd backend
+      - echo "Installing dependencies..."
+      - npm install
+
+  build:
+    commands:
+      - echo "Running database migrations..."
+      - npx node-pg-migrate up --database-url postgres://$DB_USERNAME:$DB_PASSWORD@$DB_HOST/$DB_NAME
+      - echo "Pruning dev dependencies..."
+      - npm prune --production
+      - echo "Creating Lambda deployment package..."
+      - zip -r lambda.zip . -x ".git/*"
+
+  post_build:
+    commands:
+      - echo "Updating Lambda function..."
+      - aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://lambda.zip
