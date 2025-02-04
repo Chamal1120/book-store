@@ -1,13 +1,11 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
-const { Pool } = require("pg");
+const AWS = require("aws-sdk");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const cors = require("cors");
 const awsServerlessExpress = require("aws-serverless-express");
-
-// var port = 3000;
 
 const app = express();
 
@@ -31,14 +29,8 @@ const isLocal = process.env.NODE_ENV === "development";
 // Body parser middleware
 app.use(bodyParser.json());
 
-// Postgresql connection pool
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
+// Initialize DynamoDB Document Client
+const dynamoDB = new AWS.DynamoDB.DocumentClient();
 
 // Helper function: Hash password
 function hashPassword(password) {
@@ -65,7 +57,6 @@ function verifyPassword(storedHash, password) {
 // Helper function: Generate JWT
 function generateJWT(user) {
   const payload = {
-    userId: user.id,
     username: user.username,
   };
   const options = {
@@ -100,29 +91,11 @@ function authenticateJWT(req, res, next) {
   next();
 }
 
-app.get("/me", authenticateJWT, async (req, res) => {
-  try {
-    const userResult = await pool.query(
-      "SELECT id, username FROM users WHERE id = $1",
-      [req.user.userId],
-    );
-    const user = userResult.rows[0];
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.json({ user });
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
 // Home Route
 app.get("/", async (_, res) => {
   try {
-    const result = await pool.query("SELECT * FROM books");
-    const books = result.rows;
+    const result = await dynamoDB.scan({ TableName: "Books" }).promise();
+    const books = result.Items;
 
     // Generate image URLs dynamically based on environment
     const updatedBooks = books.map((book) => {
@@ -157,25 +130,36 @@ app.post("/register", async (req, res) => {
   }
 
   try {
-    const userCheck = await pool.query(
-      "SELECT * FROM users WHERE username = $1",
-      [username],
-    );
-    if (userCheck.rows.length > 0) {
+    // Check if the user already exists
+    const userCheck = await dynamoDB
+      .get({
+        TableName: "Users",
+        Key: { username },
+      })
+      .promise();
+
+    if (userCheck.Item) {
       return res.status(400).json({ message: "Username already exists" });
     }
 
     const hashedPassword = await hashPassword(password);
 
-    const newUser = await pool.query(
-      "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, username, created_at",
-      [username, hashedPassword],
-    );
+    // Create a new user
+    const newUser = {
+      username,
+      password: hashedPassword,
+      created_at: new Date().toISOString(),
+    };
 
-    const user = newUser.rows[0];
+    await dynamoDB
+      .put({
+        TableName: "Users",
+        Item: newUser,
+      })
+      .promise();
 
     // Generate JWT token for the new user
-    const token = generateJWT(user);
+    const token = generateJWT(newUser);
 
     res.status(201).json({
       message: "User registered successfully",
@@ -198,11 +182,14 @@ app.post("/login", async (req, res) => {
   }
 
   try {
-    const userResult = await pool.query(
-      "SELECT * FROM users WHERE username = $1",
-      [username],
-    );
-    const user = userResult.rows[0];
+    const userResult = await dynamoDB
+      .get({
+        TableName: "Users",
+        Key: { username },
+      })
+      .promise();
+
+    const user = userResult.Item;
 
     if (!user) {
       return res.status(400).json({ message: "Invalid username or password" });
@@ -227,6 +214,28 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// Get User Info Route
+app.get("/me", authenticateJWT, async (req, res) => {
+  try {
+    const userResult = await dynamoDB
+      .get({
+        TableName: "Users",
+        Key: { username: req.user.username },
+      })
+      .promise();
+
+    const user = userResult.Item;
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ user: { username: user.username } });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // Protected Route: Purchase
 app.post("/purchase", authenticateJWT, async (req, res) => {
   const { bookId } = req.body;
@@ -236,27 +245,36 @@ app.post("/purchase", authenticateJWT, async (req, res) => {
   }
 
   try {
-    const bookResult = await pool.query("SELECT * FROM books WHERE id = $1", [
-      bookId,
-    ]);
-    const book = bookResult.rows[0];
+    const bookResult = await dynamoDB
+      .get({
+        TableName: "Books",
+        Key: { id: bookId },
+      })
+      .promise();
+
+    const book = bookResult.Item;
 
     if (!book) {
       return res.status(404).json({ message: "Book not found" });
     }
 
-    const username = req.user.username; // Use username from decoded JWT
+    const purchase = {
+      username: req.user.username,
+      bookname: book.bookname,
+      price: book.price,
+      purchased_date: new Date().toISOString(),
+    };
 
-    const insertResult = await pool.query(
-      "INSERT INTO purchased_books (username, bookname, price) VALUES ($1, $2, $3) RETURNING purchase_id, username, bookname, price, purchased_date",
-      [username, book.bookname, book.price],
-    );
-
-    const purchasedBook = insertResult.rows[0];
+    await dynamoDB
+      .put({
+        TableName: "PurchasedBooks",
+        Item: purchase,
+      })
+      .promise();
 
     res.status(201).json({
       message: "Book purchased successfully",
-      purchasedBook,
+      purchasedBook: purchase,
     });
   } catch (error) {
     console.error("Error purchasing book:", error);
@@ -268,11 +286,6 @@ app.post("/purchase", authenticateJWT, async (req, res) => {
 app.post("/logout", (_, res) => {
   res.status(200).json({ message: "Logged out successfully" });
 });
-
-// Start the server
-//app.listen(port, () => {
-//  console.log(`Server running on http://localhost:${port}`);
-//});
 
 // Lambda handler for Express
 const server = awsServerlessExpress.createServer(app);
