@@ -5,22 +5,26 @@ phases:
     runtime-versions:
       nodejs: 20
     commands:
+      - echo "Navigating to the backend directory..."
       - cd backend
       - echo "Installing dependencies..."
       - npm install
 
   build:
     commands:
-      - cd backend
-      - echo "Running database migrations..."
-      - npx node-pg-migrate up --database-url postgres://$DB_USERNAME:$DB_PASSWORD@$DB_HOST/$DB_NAME
-      - echo "Pruning dev dependencies..."
-      - npm prune --production
-      - echo "Creating Lambda deployment package..."
-      - zip -r lambda.zip . -x ".git/*" "tests/*" "*.md"
+      - echo "Packaging the application..."
+      - zip -r lambda-package.zip ./ -x buildspec.yml -x .git/** -x node_modules/** -x lambda-package.zip -x *.log
+      - echo "Build completed"
 
   post_build:
     commands:
-      - cd backend
-      - echo "Updating Lambda function..."
-      - aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://lambda.zip
+      - echo "Updating Lambda function code..."
+      - aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://lambda-package.zip
+      - sleep 10
+      - echo "Updating Lambda function configuration..."
+      - aws lambda update-function-configuration --function-name $LAMBDA_FUNCTION_NAME --handler app.handler
+
+artifacts:
+  files:
+    - lambda-package.zip
+
