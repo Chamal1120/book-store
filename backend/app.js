@@ -1,11 +1,11 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
-const AWS = require("aws-sdk");
 const jwt = require("jsonwebtoken");
-require("dotenv").config();
 const cors = require("cors");
 const awsServerlessExpress = require("aws-serverless-express");
+const AWS = require("aws-sdk");
+require("dotenv").config();
 
 const app = express();
 
