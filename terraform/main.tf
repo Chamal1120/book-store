@@ -99,10 +99,9 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
 resource "aws_lambda_function" "express_app" {
   function_name = "expressApp"
   role          = aws_iam_role.lambda_exec_role.arn
-  handler       = "app.handler"   # Since your entry file is app.js and it exports a handler
+  handler       = "app.handler"
   runtime       = "nodejs20.x"
 
-  # Initially, provide a placeholder ZIP file. It will be updated by CodePipeline.
   filename         = "../backend/function.zip"
   source_code_hash = filebase64sha256("../backend/function.zip")
 
@@ -285,8 +284,6 @@ resource "aws_dynamodb_table" "books" {
     type = "S"
   }
 
-  # Other attributes (bookname, author, genre, price, isbn) are stored in items.
-
   tags = {
     Environment = "production"
   }
@@ -301,8 +298,6 @@ resource "aws_dynamodb_table" "purchased_books" {
     name = "purchase_id"
     type = "S"
   }
-
-  # Other attributes (username, bookname, isbn, price, purchased_date) are stored in items.
 
   tags = {
     Environment = "production"
