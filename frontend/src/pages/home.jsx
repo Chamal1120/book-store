@@ -3,6 +3,8 @@ import HomeBookCard from '../components/homeBookCard';
 import Navbar from '../components/navBar';
 import Footer from '../components/footer';
 
+const apiUrl = "https://c1dmb26ie9.execute-api.us-east-1.amazonaws.com/prod";
+
 const Home = () => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,7 +13,7 @@ const Home = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await fetch('http://localhost:3000/');
+        const response = await fetch(`${apiUrl}/books`);
         
         if (!response.ok) {
           throw new Error(`Error fetching books: ${response.statusText}`);
