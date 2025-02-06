@@ -1,6 +1,6 @@
 provider "aws" {
   profile = "default"
-  region  = "us-east-1"
+  region  = var.aws_region
 }
 
 ###############################
@@ -12,7 +12,7 @@ resource "aws_iam_role" "codebuild_role" {
   name = "CodeBuildExpressAppRole"
 
   assume_role_policy = jsonencode({
-    Version   = "2012-10-17",
+    Version = "2012-10-17",
     Statement = [{
       Effect    = "Allow",
       Principal = { Service = "codebuild.amazonaws.com" },
@@ -42,7 +42,7 @@ resource "aws_iam_role" "codepipeline_role" {
   name = "CodePipelineExpressAppRole"
 
   assume_role_policy = jsonencode({
-    Version   = "2012-10-17",
+    Version = "2012-10-17",
     Statement = [{
       Effect    = "Allow",
       Principal = { Service = "codepipeline.amazonaws.com" },
@@ -81,7 +81,7 @@ resource "aws_iam_role" "lambda_exec_role" {
   name = "express_lambda_exec_role"
 
   assume_role_policy = jsonencode({
-    Version   = "2012-10-17",
+    Version = "2012-10-17",
     Statement = [{
       Effect    = "Allow",
       Principal = { Service = "lambda.amazonaws.com" },
@@ -97,13 +97,13 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
 
 # Lambda function using the packaged code artifact.
 resource "aws_lambda_function" "express_app" {
-  function_name = "expressApp"
+  function_name = var.lambda_function_name
   role          = aws_iam_role.lambda_exec_role.arn
   handler       = "app.handler"
   runtime       = "nodejs20.x"
 
-  filename         = "../backend/function.zip"
-  source_code_hash = filebase64sha256("../backend/function.zip")
+  filename         = var.lambda_code_path
+  source_code_hash = filebase64sha256(var.lambda_code_path)
 
   timeout = 10
 }
@@ -129,6 +129,12 @@ phases:
     commands:
       - echo "Packaging Lambda function code..."
       - zip -r function.zip .
+  post_build:
+    commands:
+      - echo "Deploying to AWS Lambda..."
+      - aws lambda update-function-code --function-name expressApp --zip-file fileb://function.zip
+      - sleep 10
+      - aws lambda update-function-configuration --function-name expressApp --handler app.handler
 artifacts:
   files:
     - backend/function.zip
@@ -170,7 +176,7 @@ resource "aws_codepipeline" "express_pipeline" {
 
   artifact_store {
     type     = "S3"
-    location = aws_s3_bucket.pipeline_bucket.bucket
+    location = var.s3_bucket_name
   }
 
   stage {
@@ -183,9 +189,9 @@ resource "aws_codepipeline" "express_pipeline" {
       version          = "1"
       output_artifacts = ["source_output"]
       configuration = {
-        Owner      = "Chamal1120"
-        Repo       = "book-store"
-        Branch     = "main"
+        Owner      = var.github_owner
+        Repo       = var.github_repo
+        Branch     = var.github_branch
         OAuthToken = var.github_token
       }
     }
@@ -206,21 +212,6 @@ resource "aws_codepipeline" "express_pipeline" {
       }
     }
   }
-
-  stage {
-    name = "Deploy"
-    action {
-      name            = "Deploy"
-      category        = "Invoke"
-      owner           = "AWS"
-      provider        = "Lambda"
-      input_artifacts = ["build_output"]
-      version         = "1"
-      configuration = {
-        FunctionName = aws_lambda_function.express_app.function_name
-      }
-    }
-  }
 }
 
 ###############################
@@ -231,7 +222,7 @@ resource "aws_s3_bucket" "pipeline_bucket" {
   bucket = "aws-bookstore-artifact-s3-bucket"
 
   tags = {
-    Name        = "aws-bookstore-artifact-s3-bucket"
+    Name        = var.s3_bucket_name
     Environment = "Production"
   }
 }
@@ -264,10 +255,10 @@ resource "aws_dynamodb_table" "users" {
   }
 
   global_secondary_index {
-    name               = "username-index"
-    hash_key           = "username"
-    projection_type    = "ALL"
-  }  
+    name            = "username-index"
+    hash_key        = "username"
+    projection_type = "ALL"
+  }
 
   tags = {
     Environment = "production"
@@ -308,9 +299,45 @@ resource "aws_dynamodb_table" "purchased_books" {
 # Terraform Variables
 ###############################
 
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "ap-south-1"
+}
+
+variable "github_owner" {
+  description = "GitHub repository owner"
+  type        = string
+}
+
+variable "github_repo" {
+  description = "GitHub repository name"
+  type        = string
+}
+
+variable "github_branch" {
+  description = "GitHub branch name"
+  type        = string
+  default     = "main"
+}
+
 variable "github_token" {
   description = "GitHub OAuth token for CodePipeline"
   type        = string
   sensitive   = true
 }
 
+variable "s3_bucket_name" {
+  description = "S3 bucket for storing pipeline artifacts"
+  type        = string
+}
+
+variable "lambda_function_name" {
+  description = "Lambda function name"
+  type        = string
+}
+
+variable "lambda_code_path" {
+  description = "Path to the Lambda function code zip file"
+  type        = string
+}
