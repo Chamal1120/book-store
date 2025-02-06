@@ -4,10 +4,13 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const awsServerlessExpress = require("aws-serverless-express");
-const AWS = require("aws-sdk");
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient, GetCommand, PutCommand, ScanCommand } = require("@aws-sdk/lib-dynamodb");
 require("dotenv").config();
 
 const app = express();
+
+// Test comment
 
 // Enable CORS
 app.use(
@@ -30,7 +33,10 @@ const isLocal = process.env.NODE_ENV === "development";
 app.use(bodyParser.json());
 
 // Initialize DynamoDB Document Client
-const dynamoDB = new AWS.DynamoDB.DocumentClient();
+const client = new DynamoDBClient({
+  endpoint: isLocal ? "http://localhost:8000" : undefined, // Use local endpoint if running locally
+});
+const dynamoDB = DynamoDBDocumentClient.from(client);
 
 // Helper function: Hash password
 function hashPassword(password) {
@@ -94,7 +100,7 @@ function authenticateJWT(req, res, next) {
 // Home Route
 app.get("/", async (_, res) => {
   try {
-    const result = await dynamoDB.scan({ TableName: "Books" }).promise();
+    const result = await dynamoDB.send(new ScanCommand({ TableName: "books" }));
     const books = result.Items;
 
     // Generate image URLs dynamically based on environment
@@ -131,12 +137,10 @@ app.post("/register", async (req, res) => {
 
   try {
     // Check if the user already exists
-    const userCheck = await dynamoDB
-      .get({
-        TableName: "Users",
-        Key: { username },
-      })
-      .promise();
+    const userCheck = await dynamoDB.send(new GetCommand({
+      TableName: "users",
+      Key: { username },
+    }));
 
     if (userCheck.Item) {
       return res.status(400).json({ message: "Username already exists" });
@@ -151,12 +155,10 @@ app.post("/register", async (req, res) => {
       created_at: new Date().toISOString(),
     };
 
-    await dynamoDB
-      .put({
-        TableName: "Users",
-        Item: newUser,
-      })
-      .promise();
+    await dynamoDB.send(new PutCommand({
+      TableName: "users",
+      Item: newUser,
+    }));
 
     // Generate JWT token for the new user
     const token = generateJWT(newUser);
@@ -182,12 +184,10 @@ app.post("/login", async (req, res) => {
   }
 
   try {
-    const userResult = await dynamoDB
-      .get({
-        TableName: "Users",
-        Key: { username },
-      })
-      .promise();
+    const userResult = await dynamoDB.send(new GetCommand({
+      TableName: "users",
+      Key: { username },
+    }));
 
     const user = userResult.Item;
 
@@ -217,12 +217,10 @@ app.post("/login", async (req, res) => {
 // Get User Info Route
 app.get("/me", authenticateJWT, async (req, res) => {
   try {
-    const userResult = await dynamoDB
-      .get({
-        TableName: "Users",
-        Key: { username: req.user.username },
-      })
-      .promise();
+    const userResult = await dynamoDB.send(new GetCommand({
+      TableName: "users",
+      Key: { username: req.user.username },
+    }));
 
     const user = userResult.Item;
 
@@ -245,12 +243,10 @@ app.post("/purchase", authenticateJWT, async (req, res) => {
   }
 
   try {
-    const bookResult = await dynamoDB
-      .get({
-        TableName: "Books",
-        Key: { id: bookId },
-      })
-      .promise();
+    const bookResult = await dynamoDB.send(new GetCommand({
+      TableName: "books",
+      Key: { id: bookId },
+    }));
 
     const book = bookResult.Item;
 
@@ -265,12 +261,10 @@ app.post("/purchase", authenticateJWT, async (req, res) => {
       purchased_date: new Date().toISOString(),
     };
 
-    await dynamoDB
-      .put({
-        TableName: "PurchasedBooks",
-        Item: purchase,
-      })
-      .promise();
+    await dynamoDB.send(new PutCommand({
+      TableName: "PurchasedBooks",
+      Item: purchase,
+    }));
 
     res.status(201).json({
       message: "Book purchased successfully",
@@ -294,3 +288,4 @@ const server = awsServerlessExpress.createServer(app);
 exports.handler = (event, context) => {
   return awsServerlessExpress.proxy(server, event, context);
 };
+
