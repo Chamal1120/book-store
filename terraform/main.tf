@@ -36,6 +36,11 @@ resource "aws_iam_role_policy_attachment" "codebuild_s3_readonly_attachment" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
+resource "aws_iam_role_policy_attachment" "codebuild_lambda_full_access" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
+}
+
 
 # IAM Role for CodePipeline
 resource "aws_iam_role" "codepipeline_role" {
@@ -102,13 +107,13 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamodb_full_access" {
 
 # Lambda function using the packaged code artifact.
 resource "aws_lambda_function" "express_app" {
-  function_name = var.lambda_function_name
+  function_name = "book-store-skyops"
   role          = aws_iam_role.lambda_exec_role.arn
   handler       = "app.handler"
   runtime       = "nodejs20.x"
 
-  filename         = var.lambda_code_path
-  source_code_hash = filebase64sha256(var.lambda_code_path)
+  filename         = "../backend/function.zip"
+  source_code_hash = filebase64sha256("../backend/function.zip")
 
   timeout = 10
 }
@@ -137,9 +142,10 @@ phases:
   post_build:
     commands:
       - echo "Deploying to AWS Lambda..."
-      - aws lambda update-function-code --function-name expressApp --zip-file fileb://function.zip
+      - aws lambda update-function-code --function-name book-store-skyops --zip-file fileb://function.zip
       - sleep 10
-      - aws lambda update-function-configuration --function-name expressApp --handler app.handler
+      - aws lambda update-function-configuration --function-name book-store-skyops --handler app.handler
+
 artifacts:
   files:
     - backend/function.zip
@@ -181,7 +187,7 @@ resource "aws_codepipeline" "express_pipeline" {
 
   artifact_store {
     type     = "S3"
-    location = var.s3_bucket_name
+    location = aws_s3_bucket.pipeline_bucket.bucket
   }
 
   stage {
@@ -224,7 +230,7 @@ resource "aws_codepipeline" "express_pipeline" {
 ###############################
 
 resource "aws_s3_bucket" "pipeline_bucket" {
-  bucket = "aws-bookstore-artifact-s3-bucket"
+  bucket = var.s3_bucket_name
 
   tags = {
     Name        = var.s3_bucket_name
@@ -307,7 +313,6 @@ resource "aws_dynamodb_table" "purchased_books" {
 variable "aws_region" {
   description = "AWS region"
   type        = string
-  default     = "ap-south-1"
 }
 
 variable "github_owner" {
@@ -334,15 +339,5 @@ variable "github_token" {
 
 variable "s3_bucket_name" {
   description = "S3 bucket for storing pipeline artifacts"
-  type        = string
-}
-
-variable "lambda_function_name" {
-  description = "Lambda function name"
-  type        = string
-}
-
-variable "lambda_code_path" {
-  description = "Path to the Lambda function code zip file"
   type        = string
 }
