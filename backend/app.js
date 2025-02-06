@@ -103,7 +103,8 @@ app.get("/", async (_, res) => {
         cover: isLocal ? localImagePath : s3ImagePath,
       };
     });
-
+    
+    res.setHeader("Access-Control-Allow-Origin", "*");
     res.status(200).json({ books: updatedBooks });
   } catch (error) {
     console.error("Error fetching books:", error);
