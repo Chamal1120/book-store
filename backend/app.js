@@ -87,7 +87,7 @@ function authenticateJWT(req, res, next) {
 }
 
 // Home Route
-app.get("/", async (_, res) => {
+app.get("/", async (req, res) => {
   try {
     const result = await dynamoDB.send(new ScanCommand({ TableName: "books" }));
     const books = result.Items;
@@ -104,7 +104,6 @@ app.get("/", async (_, res) => {
       };
     });
     
-    res.setHeader("Access-Control-Allow-Origin", "*");
     res.status(200).json({ books: updatedBooks });
   } catch (error) {
     console.error("Error fetching books:", error);
