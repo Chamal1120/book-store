@@ -3,3 +3,5 @@ node_modules/
 cookies.txt
 function.zip
 pnpm-lock.yaml
+.serverless/
+serverless.yml
