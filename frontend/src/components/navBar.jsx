@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; 
+import { useAuth } from '../context/AuthContext';
 
 const NavBar = () => {
   const { user, logout } = useAuth();
@@ -43,19 +43,22 @@ const NavBar = () => {
             >
               Register
             </button>
-            <button 
+
+            <button
               className="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-700"
               onClick={() => navigate('/logIn')}
             >
               Login
             </button>
+            
           </>
         ) : (
           // Show the username and Logout button if authenticated
           <>
-            <span className="text-lg">{user.username}</span>
+            <div className="flex items-center space-x-4 bg-gray-200 p-0.1 rounded-lg shadow-md"></div>
+            <span className="text-lg font-semibold text-gray-800 ml-4">{user.username.toUpperCase()}</span>
             <button
-              className="px-4 py-2 bg-red-600 rounded-md hover:bg-red-700"
+              className="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-700"
               onClick={handleLogout}
             >
               Logout
