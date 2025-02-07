@@ -4,7 +4,7 @@ const Footer = () => {
   return (
     <footer className="bg-gray-800 text-white text-center py-4">
       <p>
-        &copy; {new Date().getFullYear()} | 
+        &copy; {new Date().getFullYear()} |{' '}
         <a
           href="https://github.com/SkyOpsCloud"
           target="_blank"
