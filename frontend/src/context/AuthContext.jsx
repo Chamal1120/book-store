@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 
-const apiUrl = "https://6cx8mmgsil.execute-api.us-east-1.amazonaws.com/prod/api/v1/";
+const apiUrl = "https://1u4xu22uxa.execute-api.us-east-1.amazonaws.com/prod/api/v1";
 
 // Create AuthContext
 const AuthContext = createContext();
@@ -8,38 +8,57 @@ const AuthContext = createContext();
 // AuthProvider component that will wrap the app
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
 
-  // Check if the user is logged in on component mount
+  // Check if the user is logged in
   useEffect(() => {
     const fetchUser = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/me`, {
-          credentials: 'include',
-        });
-        const result = await response.json();
-        if (result.user) {
-          setUser(result.user);
+      if (token) {
+        try {
+          const response = await fetch(`${apiUrl}/me`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            credentials: 'include',
+          });
+          const result = await response.json();
+          console.log("Fetch user result:", result); // Debug log
+          if (result.user) {
+            setUser(result.user);
+          } else {
+            console.error("User not found or unauthorized");
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
         }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
       }
     };
 
     fetchUser();
-  }, []);
+  }, [token]);
 
   // Login function
-  const login = (userData) => {
+  const login = (userData, userToken) => {
     setUser(userData);
+    setToken(userToken);
+    localStorage.setItem('token', userToken); // Store the token in local storage
   };
 
   // Logout function
-  const logout = () => {
-    setUser(null);
-    fetch(`${apiUrl}/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    });
+  const logout = async () => {
+    try {
+      await fetch(`${apiUrl}/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error("Error logging out:", error);
+    } finally {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('token');
+    }
   };
 
   return (
