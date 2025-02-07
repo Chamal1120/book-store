@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 
-const apiUrl = "https://1u4xu22uxa.execute-api.us-east-1.amazonaws.com/prod/api/v1";
+const apiUrl = "https://cbdt4kq7ji.execute-api.us-east-1.amazonaws.com/prod/api/v1";
 
 // Create AuthContext
 const AuthContext = createContext();
