@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+const apiUrl = "https://cbdt4kq7ji.execute-api.us-east-1.amazonaws.com/prod/api/v1";
+
 const Register = () => {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -12,7 +14,7 @@ const Register = () => {
     if (submitClicked) {
       const registerUser = async () => {
         try {
-          const response = await fetch('http://localhost:3000/register', {
+          const response = await fetch(`${apiUrl}/register`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -21,9 +23,9 @@ const Register = () => {
             credentials: 'include',
           });
 
-          const result = await response.json();
-          if (result.user) {
-            navigate('/Login'); // Redirect to login after successful registration
+          const result = await response.json()
+          if (result.token) {
+            navigate('/Login');
           } else {
             console.error(result.message);
           }

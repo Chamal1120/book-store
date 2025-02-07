@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+const apiUrl = "https://cbdt4kq7ji.execute-api.us-east-1.amazonaws.com/prod/api/v1";
+
 const LogIn = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -13,7 +15,7 @@ const LogIn = () => {
     if (submitClicked) {
       const loginUser = async () => {
         try {
-          const response = await fetch('http://localhost:3000/login', {
+          const response = await fetch(`${apiUrl}/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -23,8 +25,8 @@ const LogIn = () => {
           });
 
           const result = await response.json();
-          if (result.user) {
-            login(result.user);
+          if (result.token) {
+            login(result.user, result.token);
             navigate('/');
           } else {
             console.error('Login failed:', result.message);
