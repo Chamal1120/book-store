@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 
+const apiUrl = "https://6cx8mmgsil.execute-api.us-east-1.amazonaws.com/prod/api/v1/";
+
 // Create AuthContext
 const AuthContext = createContext();
 
@@ -11,7 +13,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch('http://localhost:3000/me', {
+        const response = await fetch(`${apiUrl}/me`, {
           credentials: 'include',
         });
         const result = await response.json();
@@ -34,7 +36,7 @@ export const AuthProvider = ({ children }) => {
   // Logout function
   const logout = () => {
     setUser(null);
-    fetch('http://localhost:3000/logout', {
+    fetch(`${apiUrl}/logout`, {
       method: 'POST',
       credentials: 'include',
     });
