@@ -1,18 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; 
 
 const NavBar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleLogout = async () => {
     try {
-      await logout();  // Call logout function from AuthContext
-      navigate('/logIn');
+      await logout();
+      navigate('/login');
     } catch (error) {
       console.error("Error logging out:", error);
     }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    // Search functionality here (WIP)
+    console.log("Searching for:", searchTerm);
+    // Navigate to a search results page or filter books based on the search term
+    // Example: navigate(`/search?query=${searchTerm}`);
   };
 
   return (
@@ -24,13 +33,23 @@ const NavBar = () => {
       </div>
 
       {/* Search Bar */}
-      <div className="flex items-center ml-auto mr-4">
+      <form className="flex items-center ml-auto mr-4" onSubmit={handleSearch}>
         <input
           type="text"
           placeholder="Search books..."
           className="w-64 px-4 py-2 text-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          aria-label="Search books"
         />
-      </div>
+        <button 
+          type="submit" 
+          className="ml-2 px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700"
+          aria-label="Search"
+        >
+          Search
+        </button>
+      </form>
 
       {/* Buttons or User Info */}
       <div className="flex space-x-4">
@@ -40,12 +59,14 @@ const NavBar = () => {
             <button
               className="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700"
               onClick={() => navigate('/register')}
+              aria-label="Register"
             >
               Register
             </button>
             <button 
               className="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-700"
-              onClick={() => navigate('/logIn')}
+              onClick={() => navigate('/login')}
+              aria-label="Login"
             >
               Login
             </button>
@@ -57,6 +78,7 @@ const NavBar = () => {
             <button
               className="px-4 py-2 bg-red-600 rounded-md hover:bg-red-700"
               onClick={handleLogout}
+              aria-label="Logout"
             >
               Logout
             </button>
