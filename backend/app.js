@@ -8,7 +8,7 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: 'http://localhost:5173', // Specify the exact origin
+  origin: 'http://book-store-skyops-terraform-front.s3-website-us-east-1.amazonaws.com',
   credentials: true, // Allow credentials
 };
 
