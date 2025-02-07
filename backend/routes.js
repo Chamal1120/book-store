@@ -1,9 +1,10 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const crypto = require("crypto");
+const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const { DynamoDBDocumentClient, GetCommand, PutCommand, ScanCommand } = require("@aws-sdk/lib-dynamodb");
+const { DynamoDBDocumentClient, GetCommand, PutCommand, ScanCommand } =
+  require("@aws-sdk/lib-dynamodb");
 require("dotenv").config();
 
 const router = express.Router();
@@ -24,25 +25,14 @@ const client = new DynamoDBClient({
 const dynamoDB = DynamoDBDocumentClient.from(client);
 
 // Helper function: Hash password
-function hashPassword(password) {
-  return new Promise((resolve, reject) => {
-    const salt = crypto.randomBytes(16).toString("hex");
-    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
-      if (err) reject(err);
-      resolve(`${salt}:${derivedKey.toString("hex")}`);
-    });
-  });
+async function hashPassword(password) {
+  const saltRounds = 10;
+  return await bcrypt.hash(password, saltRounds);
 }
 
 // Helper function: Verify password
-function verifyPassword(storedHash, password) {
-  return new Promise((resolve, reject) => {
-    const [salt, key] = storedHash.split(":");
-    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
-      if (err) reject(err);
-      resolve(key === derivedKey.toString("hex"));
-    });
-  });
+async function verifyPassword(storedHash, password) {
+  return await bcrypt.compare(password, storedHash);
 }
 
 // Helper function: Generate JWT
@@ -51,7 +41,7 @@ function generateJWT(user) {
     username: user.username,
   };
   const options = {
-    expiresIn: "1h", // JWT expiration time
+    expiresIn: "1h",
   };
   return jwt.sign(payload, JWT_SECRET, options);
 }
@@ -67,7 +57,7 @@ function verifyJWT(token) {
 
 // Middleware: Authenticate JWT from Authorization header
 function authenticateJWT(req, res, next) {
-  const token = req.headers["authorization"]?.split(" ")[1]; // Bearer token
+  const token = req.headers["authorization"]?.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({ message: "Authorization token is missing" });
@@ -82,13 +72,12 @@ function authenticateJWT(req, res, next) {
   next();
 }
 
-// Home Route
+// Home Route: Get list of books
 router.get("/", async (_, res) => {
   try {
     const result = await dynamoDB.send(new ScanCommand({ TableName: "books" }));
     const books = result.Items;
 
-    // Generate image URLs dynamically based on environment
     const updatedBooks = books.map((book) => {
       const isbn = book.isbn;
       const localImagePath = `../covers/${isbn}.jpg`;
@@ -99,11 +88,11 @@ router.get("/", async (_, res) => {
         cover: isLocal ? localImagePath : s3ImagePath,
       };
     });
-    
+
     res.json({ books: updatedBooks });
   } catch (error) {
     console.error("Error fetching books:", error);
-    res.json({ message: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -111,7 +100,6 @@ router.get("/", async (_, res) => {
 router.post("/register", async (req, res) => {
   const { username, password, confirmPassword } = req.body;
 
-  // Input validation
   if (!username || !password || !confirmPassword) {
     return res.status(400).json({ message: "All fields are required" });
   }
@@ -121,7 +109,6 @@ router.post("/register", async (req, res) => {
   }
 
   try {
-    // Check if the user already exists
     const userCheck = await dynamoDB.send(new GetCommand({
       TableName: "users",
       Key: { username },
@@ -133,7 +120,6 @@ router.post("/register", async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
 
-    // Create a new user
     const newUser = {
       username,
       password: hashedPassword,
@@ -145,12 +131,11 @@ router.post("/register", async (req, res) => {
       Item: newUser,
     }));
 
-    // Generate JWT token for the new user
     const token = generateJWT(newUser);
 
     res.status(201).json({
       message: "User registered successfully",
-      token, // Send the JWT token to the client
+      token,
     });
   } catch (error) {
     console.error("Error registering user:", error);
@@ -163,9 +148,7 @@ router.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res
-      .status(400)
-      .json({ message: "Username and password are required" });
+    return res.status(400).json({ message: "Username and password are required" });
   }
 
   try {
@@ -186,12 +169,11 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Invalid username or password" });
     }
 
-    // Generate JWT token for the logged-in user
     const token = generateJWT(user);
 
     res.status(200).json({
       message: "Login successful",
-      token, // Send the JWT token to the client
+      token,
     });
   } catch (error) {
     console.error("Error logging in user:", error);
@@ -219,51 +201,10 @@ router.get("/me", authenticateJWT, async (req, res) => {
   }
 });
 
-// Protected Route: Purchase
-router.post("/purchase", authenticateJWT, async (req, res) => {
-  const { bookId } = req.body;
-
-  if (!bookId) {
-    return res.status(400).json({ message: "Book ID is required" });
-  }
-
-  try {
-    const bookResult = await dynamoDB.send(new GetCommand({
-      TableName: "books",
-      Key: { id: bookId },
-    }));
-
-    const book = bookResult.Item;
-
-    if (!book) {
-      return res.status(404).json({ message: "Book not found" });
-    }
-
-    const purchase = {
-      username: req.user.username,
-      bookname: book.bookname,
-      price: book.price,
-      purchased_date: new Date().toISOString(),
-    };
-
-    await dynamoDB.send(new PutCommand({
-      TableName: "PurchasedBooks",
-      Item: purchase,
-    }));
-
-    res.status(201).json({
-      message: "Book purchased successfully",
-      purchasedBook: purchase,
-    });
-  } catch (error) {
-    console.error("Error purchasing book:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
 // Logout Route
 router.post("/logout", (_, res) => {
   res.status(200).json({ message: "Logged out successfully" });
 });
 
 module.exports = router;
+
