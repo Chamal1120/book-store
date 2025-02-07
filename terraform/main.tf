@@ -227,7 +227,7 @@ phases:
       - echo "Deploying to AWS Lambda..."
       - aws lambda update-function-code --function-name book-store-skyops --zip-file fileb://function.zip
       - sleep 10
-      - aws lambda update-function-configuration --function-name book-store-skyops --handler app.handler
+      - aws lambda update-function-configuration --function-name book-store-skyops --handler lambda.handler
 
 artifacts:
   files:
@@ -395,7 +395,7 @@ resource "aws_codepipeline" "express_pipeline" {
 resource "aws_lambda_function" "express_app" {
   function_name = "book-store-skyops"
   role          = aws_iam_role.lambda_exec_role.arn
-  handler       = "app.handler"
+  handler       = "lambda.handler"
   runtime       = "nodejs20.x"
 
   filename         = "../backend/function.zip"
@@ -407,25 +407,36 @@ resource "aws_lambda_function" "express_app" {
 ###############################
 # DynamoDB Tables
 ###############################
-
 resource "aws_dynamodb_table" "users" {
   name         = "users"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "id"
-
-  attribute {
-    name = "id"
-    type = "S"
-  }
+  hash_key     = "username"
 
   attribute {
     name = "username"
     type = "S"
   }
 
+  attribute {
+    name = "password"
+    type = "S"
+  }
+
+  attribute {
+    name = "id"
+    type = "S"  # This is used for the GSI
+  }
+
   global_secondary_index {
-    name            = "username-index"
-    hash_key        = "username"
+    name            = "id-index"
+    hash_key        = "id"
+    projection_type = "ALL"
+  }
+
+  # Dummy GSI for password to satisfy the requirement
+  global_secondary_index {
+    name            = "password-index"
+    hash_key        = "password"
     projection_type = "ALL"
   }
 
@@ -437,11 +448,70 @@ resource "aws_dynamodb_table" "users" {
 resource "aws_dynamodb_table" "books" {
   name         = "books"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "id"
+  hash_key     = "isbn"
 
   attribute {
-    name = "id"
+    name = "isbn"
     type = "S"
+  }
+
+  attribute {
+    name = "book_id"
+    type = "S"  # Ensure this is defined and indexed
+  }
+
+  attribute {
+    name = "title"
+    type = "S"
+  }
+
+  attribute {
+    name = "price"
+    type = "N"
+  }
+
+  attribute {
+    name = "author"
+    type = "S"
+  }
+
+  attribute {
+    name = "cover_path"
+    type = "S"
+  }
+
+  # Adding GSIs for attributes that are not primary keys
+  global_secondary_index {
+    name            = "author-index"
+    hash_key        = "author"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "title-index"
+    hash_key        = "title"
+    projection_type = "ALL"
+  }
+
+  # Dummy GSI for price to satisfy the requirement
+  global_secondary_index {
+    name            = "price-index"
+    hash_key        = "price"
+    projection_type = "ALL"
+  }
+
+  # Dummy GSI for cover_path to satisfy the requirement
+  global_secondary_index {
+    name            = "cover_path-index"
+    hash_key        = "cover_path"
+    projection_type = "ALL"
+  }
+
+  # Dummy GSI for book_id to satisfy the requirement
+  global_secondary_index {
+    name            = "book_id-index"
+    hash_key        = "book_id"
+    projection_type = "ALL"
   }
 
   tags = {
@@ -464,65 +534,67 @@ resource "aws_dynamodb_table" "purchased_books" {
   }
 }
 
+
 ###############################
-# API Gateway
+# API Gateway for Express Lambda Function
 ###############################
 
+# Create the API Gateway REST API
 resource "aws_api_gateway_rest_api" "express_api" {
-  name        = "ExpressAPI"
-  description = "API Gateway for the Express app"
+  name        = "express_api"
+  description = "API Gateway for Express Lambda function using Lambda proxy integration"
 }
 
-resource "aws_api_gateway_resource" "api_resource" {
+# Create a proxy resource to capture all paths
+resource "aws_api_gateway_resource" "proxy" {
   rest_api_id = aws_api_gateway_rest_api.express_api.id
   parent_id   = aws_api_gateway_rest_api.express_api.root_resource_id
-  path_part   = "api"  # This will create a path like /api
+  path_part   = "{proxy+}"
 }
 
-resource "aws_api_gateway_resource" "lambda_resource" {
-  rest_api_id = aws_api_gateway_rest_api.express_api.id
-  parent_id   = aws_api_gateway_resource.api_resource.id
-  path_part   = "{proxy+}"  # This will allow for any sub-paths (e.g., /api/endpoint)
-}
-
-resource "aws_api_gateway_method" "lambda_method" {
+# Create an ANY method on the proxy resource
+resource "aws_api_gateway_method" "any_method" {
   rest_api_id   = aws_api_gateway_rest_api.express_api.id
-  resource_id   = aws_api_gateway_resource.lambda_resource.id
-  http_method   = "ANY"  # This allows all HTTP methods (GET, POST, etc.)
-  authorization = "NONE"  # Change to "AWS_IAM" if you want to secure it
+  resource_id   = aws_api_gateway_resource.proxy.id
+  http_method   = "ANY"
+  authorization = "NONE"
 }
 
-resource "aws_api_gateway_integration" "lambda_integration" {
+# Integrate the ANY method with your Lambda function using AWS_PROXY integration
+resource "aws_api_gateway_integration" "lambda_proxy" {
   rest_api_id             = aws_api_gateway_rest_api.express_api.id
-  resource_id             = aws_api_gateway_resource.lambda_resource.id
-  http_method             = aws_api_gateway_method.lambda_method.http_method
-  integration_http_method = "POST"  # Lambda integration method
-  type                    = "AWS_PROXY"  # Use AWS_PROXY for Lambda integration
-
-  uri = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${aws_lambda_function.express_app.arn}/invocations"
+  resource_id             = aws_api_gateway_resource.proxy.id
+  http_method             = aws_api_gateway_method.any_method.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.express_app.invoke_arn
 }
 
-resource "aws_lambda_permission" "allow_api_gateway" {
+resource "aws_api_gateway_deployment" "express_api_deployment" {
+  depends_on  = [aws_api_gateway_integration.lambda_proxy]
+  rest_api_id = aws_api_gateway_rest_api.express_api.id
+
+  triggers = {
+    redeployment = sha1(jsonencode({
+      lambda_integration_uri = aws_api_gateway_integration.lambda_proxy.uri
+    }))
+  }
+}
+
+# Explicitly create a stage for the deployment
+resource "aws_api_gateway_stage" "express_api_stage" {
+  stage_name    = "prod"
+  rest_api_id   = aws_api_gateway_rest_api.express_api.id
+  deployment_id = aws_api_gateway_deployment.express_api_deployment.id
+}
+
+# Allow API Gateway to invoke your Lambda function
+resource "aws_lambda_permission" "apigw_lambda" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.express_app.function_name
   principal     = "apigateway.amazonaws.com"
-
-  # The source ARN allows the API Gateway to invoke the Lambda function
-  source_arn = "${aws_api_gateway_rest_api.express_api.execution_arn}/*/*"
-}
-
-resource "aws_api_gateway_deployment" "api_deployment" {
-  rest_api_id = aws_api_gateway_rest_api.express_api.id
-
-  depends_on = [aws_api_gateway_integration.lambda_integration]  # Ensure the integration is created before deployment
-}
-
-resource "aws_api_gateway_stage" "api_stage" {
-  stage_name    = "prod"  # You can change this to your desired stage name
-  rest_api_id   = aws_api_gateway_rest_api.express_api.id
-  deployment_id = aws_api_gateway_deployment.api_deployment.id
-  description = "Production stage for Express API"
+  source_arn    = "${aws_api_gateway_rest_api.express_api.execution_arn}/*/*"
 }
 
 ###############################
