@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const apiUrl = "https://6cx8mmgsil.execute-api.us-east-1.amazonaws.com/prod/api/v1/";
+const apiUrl = "https://1u4xu22uxa.execute-api.us-east-1.amazonaws.com/prod/api/v1";
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -23,9 +23,9 @@ const Register = () => {
             credentials: 'include',
           });
 
-          const result = await response.json();
-          if (result.user) {
-            navigate('/Login'); // Redirect to login after successful registration
+          const result = await response.json()
+          if (result.token) {
+            navigate('/Login');
           } else {
             console.error(result.message);
           }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const apiUrl = "https://6cx8mmgsil.execute-api.us-east-1.amazonaws.com/prod/api/v1/";
+const apiUrl = "https://1u4xu22uxa.execute-api.us-east-1.amazonaws.com/prod/api/v1";
 
 const LogIn = () => {
   const [username, setUsername] = useState('');
@@ -25,8 +25,8 @@ const LogIn = () => {
           });
 
           const result = await response.json();
-          if (result.user) {
-            login(result.user);
+          if (result.token) {
+            login(result.user, result.token);
             navigate('/');
           } else {
             console.error('Login failed:', result.message);

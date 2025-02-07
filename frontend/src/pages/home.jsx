@@ -3,7 +3,7 @@ import HomeBookCard from '../components/homeBookCard';
 import Navbar from '../components/navBar';
 import Footer from '../components/footer';
 
-const apiUrl = "https://6cx8mmgsil.execute-api.us-east-1.amazonaws.com/prod/api/v1/";
+const apiUrl = "https://1u4xu22uxa.execute-api.us-east-1.amazonaws.com/prod/api/v1";
 
 const Home = () => {
   const [books, setBooks] = useState([]);
