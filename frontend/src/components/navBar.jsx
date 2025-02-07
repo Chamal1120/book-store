@@ -19,7 +19,7 @@ const NavBar = () => {
     <nav className="flex justify-between items-center px-6 py-4 bg-gray-800 text-white">
       {/* Logo */}
       <div className="flex items-center space-x-2">
-        <img src="/src/assets/react.svg" alt="Logo" className="w-8 h-8" />
+        <img src="/src/assets/logo.svg" alt="Logo" className="w-8 h-8" />
         <span className="text-xl font-bold">BookStore</span>
       </div>
 
