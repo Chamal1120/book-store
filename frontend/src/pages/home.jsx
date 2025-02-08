@@ -1,35 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useBooks } from '../context/BooksContext'; // Import the custom hook
 import HomeBookCard from '../components/homeBookCard';
 import Navbar from '../components/navBar';
 import Footer from '../components/footer';
 
-const apiUrl = "https://cbdt4kq7ji.execute-api.us-east-1.amazonaws.com/prod/api/";
-
 const Home = () => {
-  const [books, setBooks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        const response = await fetch(`${apiUrl}`);
-        
-        if (!response.ok) {
-          throw new Error(`Error fetching books: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        setBooks(data.books || []);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBooks();
-  }, []);
+  const { books, loading, error } = useBooks();
 
   return (
     <div>
@@ -51,3 +27,4 @@ const Home = () => {
 };
 
 export default Home;
+
