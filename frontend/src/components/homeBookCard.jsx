@@ -15,7 +15,7 @@ const HomeBookCard = ({ book }) => {
     >
       <div className="w-full h-64 flex justify-center items-center bg-gray-100 rounded-md overflow-hidden">
         <img
-          src={book.cover}
+          src={book.cover_path}
           alt={book.title}
           className="h-full object-contain"
         />

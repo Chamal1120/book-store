@@ -24,7 +24,7 @@ const BookPage = () => {
           {/* Cover Image */}
           <div className="flex justify-center mt-20 h-full">
             <img
-              src={book.cover}
+              src={book.cover_path}
               alt={book.title}
               className="w-full h-auto max-h-96 object-contain rounded-md"
             />
@@ -49,7 +49,7 @@ const BookPage = () => {
               <p className="text-base text-gray-600 mt-2 text-justify">{book.description}</p>
             </div>
 
-            <p className="text-2xl font-semibold text-green-600 mt-6">Price: ${book.price}</p>
+            <p className="text-2xl font-semibold text-green-600 mt-6">Price: {book.price}LKR</p>
             <button
               className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
               onClick={() => alert('Added to cart!')}
