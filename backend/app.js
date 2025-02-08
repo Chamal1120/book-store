@@ -1,9 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const routes = require('./routes');​
+const routes = require('./routes');
 
-​
 const app = express();
 
 const allowedOrigins = [
@@ -26,7 +25,7 @@ app.use(cors(corsOptions)); // Use the CORS options
 
 app.use(bodyParser.json());
 
-// Mount routes under /api/​
+// Mount routes under /api/
 app.use('/api', routes);
 
 module.exports = app

@@ -290,7 +290,7 @@ phases:
           badge_status=passing
           badge_colour=green
         fi
-      - curl -s "https://img.shields.io/badge/Backend_Codepipeline-$badge_status-$badge_colour.svg" > backend-build.svg
+      - curl -s "https://img.shields.io/badge/Backend_CodePipeline-$badge_status-$badge_colour.svg" > backend-build.svg
       - aws s3 cp backend-build.svg s3://$S3_BUCKET_BUILD_BADGES/badges/backend-build.svg --cache-control no-cache
 
 artifacts:
