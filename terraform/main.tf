@@ -86,6 +86,47 @@ resource "aws_s3_bucket_versioning" "pipeline_bucket_versioning" {
   }
 }
 
+resource "aws_s3_bucket" "build_badges_bucket" {
+  bucket = var.build_badges_bucket_name
+
+  tags = {
+    Name        = "build_badges_bucket"
+    Environment = "Production"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "build_badges_bucket_access" {
+  bucket                  = aws_s3_bucket.build_badges_bucket.id
+  block_public_acls       = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+resource "aws_s3_bucket_policy" "build_badges_bucket_policy" {
+  bucket = aws_s3_bucket.build_badges_bucket.id
+  policy = data.aws_iam_policy_document.build_badges_bucket_policy.json
+}
+
+data "aws_iam_policy_document" "build_badges_bucket_policy" {
+  statement {
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket"
+    ]
+
+    resources = [
+      aws_s3_bucket.build_badges_bucket.arn,
+      "${aws_s3_bucket.build_badges_bucket.arn}/*"
+    ]
+  }
+}
+
 ###############################
 # IAM Roles and Policies
 ###############################
@@ -201,9 +242,21 @@ phases:
   build:
     commands:
       - npm run build
+
   post_build:
     commands:
       - aws s3 sync dist/ s3://$S3_BUCKET/ --delete
+    finally:
+      - |
+        if [ "$buildExitCode" -ne 0 ]; then
+          badge_status=failing
+          badge_colour=red
+        else
+          badge_status=passing
+          badge_colour=green
+        fi
+      - curl -s "https://img.shields.io/badge/Frontend_CodePipeline-$badge_status-$badge_colour.svg" > frontend-build.svg
+      - aws s3 cp frontend-build.svg s3://$S3_BUCKET_BUILD_BADGES/badges/frontend-build.svg --cache-control no-cache
 EOF
 
   buildspec_back = <<EOF
@@ -217,17 +270,28 @@ phases:
       - echo "Changing into backend folder"
       - cd backend
       - echo "Installing dependencies..."
-      - npm install
+      - npm install --production
   build:
     commands:
       - echo "Packaging Lambda function code..."
-      - zip -r function.zip .
+      - zip -r function.zip . -x "*.git*" -x "README.md" -x "mockdata.md"
   post_build:
     commands:
       - echo "Deploying to AWS Lambda..."
       - aws lambda update-function-code --function-name book-store-skyops --zip-file fileb://function.zip
       - sleep 10
       - aws lambda update-function-configuration --function-name book-store-skyops --handler lambda.handler
+    finally:
+      - |
+        if [ "$buildExitCode" -ne 0 ]; then
+          badge_status=failing
+          badge_colour=red
+        else
+          badge_status=passing
+          badge_colour=green
+        fi
+      - curl -s "https://img.shields.io/badge/Backend_Codepipeline-$badge_status-$badge_colour.svg" > backend-build.svg
+      - aws s3 cp backend-build.svg s3://$S3_BUCKET_BUILD_BADGES/badges/backend-build.svg --cache-control no-cache
 
 artifacts:
   files:
@@ -258,6 +322,11 @@ resource "aws_codebuild_project" "book_store_front_build" {
       name  = "S3_BUCKET"
       value = aws_s3_bucket.book_store_front_bucket.bucket
     }
+
+    environment_variable {
+      name  = "S3_BUCKET_BUILD_BADGES"
+      value = aws_s3_bucket.build_badges_bucket.bucket
+    }
   }
 
   source {
@@ -282,6 +351,11 @@ resource "aws_codebuild_project" "express_app_build" {
     image        = "aws/codebuild/amazonlinux-x86_64-lambda-standard:nodejs20"
     type            = "LINUX_LAMBDA_CONTAINER"
     privileged_mode = false
+
+    environment_variable {
+      name  = "S3_BUCKET_BUILD_BADGES"
+      value = aws_s3_bucket.build_badges_bucket.bucket
+    }
   }
 
   source {
@@ -699,5 +773,10 @@ variable "s3_bucket_name_front" {
 
 variable "s3_bucket_name" {
   description = "S3 bucket for storing pipeline artifacts"
+  type        = string
+}
+
+variable "build_badges_bucket_name" {
+  description = "S3 bucket for storing build badges"
   type        = string
 }
