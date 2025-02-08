@@ -12,9 +12,6 @@ const router = express.Router();
 // JWT Secret Key
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_not_secure_string";
 
-// Base S3 URL
-const S3_BUCKET_URL = "https://bookstore-images.s3.amazonaws.com";
-
 // Check if running locally
 const isLocal = process.env.NODE_ENV === "development";
 
@@ -78,18 +75,7 @@ router.get("/", async (_, res) => {
     const result = await dynamoDB.send(new ScanCommand({ TableName: "books" }));
     const books = result.Items;
 
-    const updatedBooks = books.map((book) => {
-      const isbn = book.isbn;
-      const localImagePath = `../covers/${isbn}.jpg`;
-      const s3ImagePath = `${S3_BUCKET_URL}/${isbn}.jpg`;
-
-      return {
-        ...book,
-        cover: isLocal ? localImagePath : s3ImagePath,
-      };
-    });
-
-    res.json({ books: updatedBooks });
+    res.json({ books });
   } catch (error) {
     console.error("Error fetching books:", error);
     res.status(500).json({ message: "Server error" });

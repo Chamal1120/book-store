@@ -457,11 +457,21 @@ resource "aws_dynamodb_table" "books" {
 
   attribute {
     name = "book_id"
-    type = "S"  # Ensure this is defined and indexed
+    type = "S"
   }
 
   attribute {
     name = "title"
+    type = "S"
+  }
+
+  attribute {
+    name = "description"
+    type = "S"
+  }
+
+  attribute {
+    name = "author"
     type = "S"
   }
 
@@ -471,12 +481,7 @@ resource "aws_dynamodb_table" "books" {
   }
 
   attribute {
-    name = "author"
-    type = "S"
-  }
-
-  attribute {
-    name = "cover_path"
+    name = "cover_url"
     type = "S"
   }
 
@@ -493,24 +498,27 @@ resource "aws_dynamodb_table" "books" {
     projection_type = "ALL"
   }
 
-  # Dummy GSI for price to satisfy the requirement
   global_secondary_index {
     name            = "price-index"
     hash_key        = "price"
     projection_type = "ALL"
   }
 
-  # Dummy GSI for cover_path to satisfy the requirement
-  global_secondary_index {
-    name            = "cover_path-index"
-    hash_key        = "cover_path"
-    projection_type = "ALL"
-  }
-
-  # Dummy GSI for book_id to satisfy the requirement
   global_secondary_index {
     name            = "book_id-index"
     hash_key        = "book_id"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "description-index"
+    hash_key        = "description"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "cover_url-index"
+    hash_key        = "cover_url"
     projection_type = "ALL"
   }
 
@@ -527,6 +535,62 @@ resource "aws_dynamodb_table" "purchased_books" {
   attribute {
     name = "purchase_id"
     type = "S"
+  }
+
+  attribute {
+    name = "purchased_user"
+    type = "S"
+  }
+
+  attribute {
+    name = "purchased_book_title"
+    type = "S"
+  }
+
+  attribute {
+    name = "purchased_book_author"
+    type = "S"
+  }
+
+  attribute {
+    name = "purchased_book_isbn"
+    type = "S"
+  }
+
+  attribute {
+    name = "purchased_book_price"
+    type = "N"
+  }
+
+  # GSI to query purchases by username
+  global_secondary_index {
+    name            = "purchased_user-index"
+    hash_key        = "purchased_user"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "purchased_book_title-index"
+    hash_key        = "purchased_book_title"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "purchased_book_author-index"
+    hash_key        = "purchased_book_author"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "purchased_book_isbn-index"
+    hash_key        = "purchased_book_isbn"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "purchased_book_price-index"
+    hash_key        = "purchased_book_price"
+    projection_type = "ALL"
   }
 
   tags = {
