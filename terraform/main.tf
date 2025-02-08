@@ -239,13 +239,13 @@ phases:
       - echo "changing into frontend folder"
       - cd frontend
       - npm install
+  pre_build:
+    commands:
+      - buildExitCode=1
   build:
     commands:
       - npm run build
-
-  post_build:
-    commands:
-      - aws s3 sync dist/ s3://$S3_BUCKET/ --delete
+      - buildExitCode=$? 
     finally:
       - |
         if [ "$buildExitCode" -ne 0 ]; then
@@ -257,6 +257,9 @@ phases:
         fi
       - curl -s "https://img.shields.io/badge/Frontend_CodePipeline-$badge_status-$badge_colour.svg" > frontend-build.svg
       - aws s3 cp frontend-build.svg s3://$S3_BUCKET_BUILD_BADGES/badges/frontend-build.svg --cache-control no-cache
+  post_build:
+    commands:
+      - aws s3 sync dist/ s3://$S3_BUCKET/ --delete
 EOF
 
   buildspec_back = <<EOF
@@ -270,17 +273,15 @@ phases:
       - echo "Changing into backend folder"
       - cd backend
       - echo "Installing dependencies..."
-      - npm install --production
+      - npm install --omit=dev
+  pre_build:
+    commands:
+      - buildExitCode=1
   build:
     commands:
       - echo "Packaging Lambda function code..."
-      - zip -r function.zip . -x "*.git*" -x "README.md" -x "mockdata.md"
-  post_build:
-    commands:
-      - echo "Deploying to AWS Lambda..."
-      - aws lambda update-function-code --function-name book-store-skyops --zip-file fileb://function.zip
-      - sleep 10
-      - aws lambda update-function-configuration --function-name book-store-skyops --handler lambda.handler
+      - zip -r function.zip . -x ".eslintrc" ".git/*" "README.md" "mockdata.md"
+      - buildExitCode=$?
     finally:
       - |
         if [ "$buildExitCode" -ne 0 ]; then
@@ -292,6 +293,12 @@ phases:
         fi
       - curl -s "https://img.shields.io/badge/Backend_CodePipeline-$badge_status-$badge_colour.svg" > backend-build.svg
       - aws s3 cp backend-build.svg s3://$S3_BUCKET_BUILD_BADGES/badges/backend-build.svg --cache-control no-cache
+  post_build:
+    commands:
+      - echo "Deploying to AWS Lambda..."
+      - aws lambda update-function-code --function-name book-store-skyops --zip-file fileb://function.zip
+      - sleep 10
+      - aws lambda update-function-configuration --function-name book-store-skyops --handler lambda.handler
 
 artifacts:
   files:
