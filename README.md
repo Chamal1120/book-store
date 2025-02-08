@@ -1,6 +1,13 @@
-# SkyOps Bookstore - A Demo E-commerce WebApp with serverless technologies
+# SkyOps Bookstore - A Serverless E-commerce Web Application
 
-This is a demo e-commerce web application built with with Express and React and runs with serverless computing. The application allows users to browse books, add them to a shopping cart, and purchase them.
+![frontend-codepipeline-status](https://book-store-skyops-build-badges.s3.us-east-1.amazonaws.com/badges/frontend-build.svg)
+![backend-codepipeline-status](https://book-store-skyops-build-badges.s3.us-east-1.amazonaws.com/badges/backend-build.svg)
+
+![preview-skyops-bookstore](./github-assets/preview.webp)
+
+This is a demo e-commerce web application built with with Express and React and runs on top of serverless technologies. The application allows users to browse books, add them to a shopping cart, and purchase them.
+
+This is done as a part of the SkyOps team project for the CCS3316 - Cloud Application Development Module of University to demonstrate the use of serverless technologies in building a modern web application to withstand unpredictable high traffic and be cost-effective.
 
 # Features
 
@@ -12,8 +19,9 @@ This is a demo e-commerce web application built with with Express and React and 
 5. Hassle free cloud resource management with Terraform.
 
 # Architecture
+![design-architecture](./github-assets/architecture.svg)
 
-# How to self deploy
+# Deployment Instructions
 
 ## Prerequisites
 
@@ -35,10 +43,24 @@ CloudWatchLogsFullAccess
 
 ## Steps
 
-1. Clone the repository:
-2. Install the dependencies for backend:
-3. Zip the backend folder into a zip file:
-4. Create the terraform.tfvars file with the following variables:
+1. Fork, Clone and cd into the repository:
+```bash
+git clone <your-fork-repo-git-url> && cd skyops-bookstore
+```
+
+2. Make a dummy zip file in the backend folder:
+```bash
+cd backend
+echo "Hello, World!" > dummy.txt && zip function.zip dummy.txt && rm dummy.txt
+```
+
+3. Create the terraform.tfvars file inside terraform folder with the following variables:
+
+```bash
+cd terraform
+touch terraform.tfvars
+```
+
 ```
 aws_region = "your-aws-region"
 github_owner = "your-github-owner"
@@ -48,21 +70,29 @@ github_token = "your-github-token"
 s3_bucket_name = "your-s3-bucket-name"
 s3_bucket_name_front = "your-s3-bucket-name-for-frontend"
 ```
+
 5. Run the terraform script to deploy the backend and frontend with codebuilds and codepipelines:
 
+```bash
+terraform init # Initialize the terraform
+terraform validate # Validate the terraform file
+terraform plan -out=plan.out # Plan the terraform deployment
+terraform apply plan.out # Apply the terraform deployment
+```
+
 > [!Note]
-> To stay within the AWS free tier, we have not utilized any environment variable management services like AWS Secrets Manager or AWS Parameter Store. If you wish to use them, you can modify the backend code to fetch the environment variables from the AWS Secrets Manager or AWS Parameter Store.
+> To maintain simplicity, we have not utilized any environment variable management service like AWS Secrets Manager which requires additional setting up of resources. If you wish to use them, you can modify the backend code to fetch the environment variables from the AWS Secrets Manager or AWS Parameter Store.
 
-# Wanna know in-depth details?
+# Read more on
 
-Frontend: [Frontend README](frontend/README.md)
-backend: [Backend README](backend/README.md)
-Terraform: [Terraform README](terraform/README.md)
-
+* [Frontend](frontend/README.md)<br>
+* [Backend](backend/README.md)<br>
+* [Terraform](terraform/README.md)<br>
 
 # Contributing
 
-This section is for the memebers of the team to contribute to the project.
+This section is for the members of the team who contributes to the project.
 
 1. Make sure to follow PR template before openning a PR.
-2. If you wish to test this using your own account, you have to change api endpoints and cors access url in the frontend.
+2. If you wish to test the backend using your own account, you have to change api endpoints and cors access urls in the frontend.
+3. You could also combine serverless-offline and dynamoDB docker image to test the backend locally.
