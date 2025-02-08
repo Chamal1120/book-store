@@ -7,7 +7,7 @@
 
 This is a demo e-commerce web application built with with Express and React and runs on top of serverless technologies. The application allows users to browse books, add them to a shopping cart, and purchase them.
 
-This is done as a part of the SkyOps team project for the CCS3316 - Cloud Application Development Module of University to demonstrate the use of serverless technologies in building a modern web application to withstand unpredictable high traffic and be cost-effective.
+This is done as a part of the group project for the CCS3316 - Cloud Application Development Module of the University to demonstrate the use of serverless technologies in building a modern web application to withstand unpredictable high traffic and be cost-effective.
 
 # Features
 
