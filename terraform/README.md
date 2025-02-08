@@ -16,10 +16,6 @@ This project contains a Terraform configuration for deploying an AWS-based Expre
 
 - **`s3_bucket_name`**: The name of the S3 bucket where the CodePipeline artifacts will be stored.
 
-- **`lambda_function_name`**: The name of the Lambda function to deploy the code to.
-
-- **`lambda_code_path`**: The local path to the zipped Lambda function code. Update it if the path to your Lambda code changes.
-
 #### Example
 ```hcl
 aws_region           = "ap-south-1"
@@ -31,8 +27,6 @@ github_token         = "your-github-token"
 
 s3_bucket_name       = "your-s3-bucket-name"
 
-lambda_function_name = "your-lambda-function-name"
-lambda_code_path     = "path/to/your/lambda-code.zip"
 ```
 
 ---
