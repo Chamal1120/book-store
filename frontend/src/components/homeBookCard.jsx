@@ -5,7 +5,7 @@ const HomeBookCard = ({ book }) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(`/book/${book.id}`, { state: { book } });
+    navigate(`/book/${book.isbn}`, { state: { book } });
   };
 
   return (
