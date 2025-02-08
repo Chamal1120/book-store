@@ -20,7 +20,11 @@ const HomeBookCard = ({ book }) => {
           className="h-full object-contain"
         />
       </div>
-      <h2 className="mt-2 text-lg font-semibold">{book.title}</h2>
+      <h2 className="mt-2 text-lg font-semibold">
+        {
+          book.title.length > 25 ? book.title.substring(0, 25) + "..." : book.title
+        }
+      </h2>
       <p className="text-sm text-gray-600">by {book.author}</p>
       <p className="mt-1 font-bold text-blue-600">{book.price}LKR</p>
     </div>
