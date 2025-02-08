@@ -15,9 +15,11 @@ const Home = () => {
         {error && <p className="text-red-500">Error: {error}</p>}
         {!loading && !error && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
-            {books.map((book) => (
-              <HomeBookCard key={book.id} book={book} />
-            ))}
+            {
+              books.map((book) => (
+                <HomeBookCard key={book.isbn} book={book} />
+              ))
+            }
           </div>
         )}
       </div>
