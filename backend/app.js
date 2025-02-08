@@ -6,10 +6,20 @@ const routes = require('./routes'); // Import the routes​
 // Begin Application config​
 const app = express();
 
-// CORS configuration
+const allowedOrigins = [
+  'http://book-store-skyops-terraform-front.s3-website-us-east-1.amazonaws.com',
+  'http://localhost:5173'
+];
+
 const corsOptions = {
-  origin: 'http://book-store-skyops-terraform-front.s3-website-us-east-1.amazonaws.com',
-  credentials: true, // Allow credentials
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true, // Allow credentials (authorization headers, etc.)
 };
 
 app.use(cors(corsOptions)); // Use the CORS options
@@ -17,6 +27,6 @@ app.use(cors(corsOptions)); // Use the CORS options
 app.use(bodyParser.json());
 
 // Mount routes under /api/v1/​
-app.use('/api/v1/', routes);
+app.use('/api', routes);
 
 module.exports = app
