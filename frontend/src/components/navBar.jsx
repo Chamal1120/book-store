@@ -77,7 +77,7 @@ const NavBar = () => {
           // Show the username and Logout button if authenticated
           <>
             <div className="flex items-center space-x-4 bg-gray-200 p-0.1 rounded-lg shadow-md"></div>
-            <span className="text-lg font-semibold text-gray-800 ml-4">{user.username.toUpperCase()}</span>
+            <span className="px-4 py-2 bg-green-600 text-white rounded-md cursor-pointer hover:bg-green-700">{user.username.toUpperCase()}</span>
             <button
               className="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-700"
               onClick={handleLogout}

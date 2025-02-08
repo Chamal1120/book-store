@@ -238,16 +238,16 @@ EOF
 resource "aws_codebuild_project" "book_store_front_build" {
   name          = "BookStoreFrontBuild"
   service_role  = aws_iam_role.codebuild_role.arn
-  build_timeout = 20
+  build_timeout = 15
   
   artifacts {
     type = "CODEPIPELINE"
   }
 
   environment {
-    compute_type = "BUILD_GENERAL1_SMALL"
-    image        = "aws/codebuild/standard:5.0"
-    type         = "LINUX_CONTAINER"
+    compute_type = "BUILD_LAMBDA_1GB"
+    image        = "aws/codebuild/amazonlinux-x86_64-lambda-standard:nodejs20"
+    type         = "LINUX_LAMBDA_CONTAINER"
 
     environment_variable {
       name  = "AWS_DEFAULT_REGION"
@@ -271,16 +271,16 @@ resource "aws_codebuild_project" "express_app_build" {
   name          = "ExpressAppBuild"
   description   = "Build project for Express app on AWS Lambda"
   service_role  = aws_iam_role.codebuild_role.arn
-  build_timeout = 10
+  build_timeout = 15
 
   artifacts {
     type = "CODEPIPELINE"
   }
 
   environment {
-    compute_type    = "BUILD_GENERAL1_SMALL"
-    image           = "aws/codebuild/standard:6.0"
-    type            = "LINUX_CONTAINER"
+    compute_type = "BUILD_LAMBDA_1GB"
+    image        = "aws/codebuild/amazonlinux-x86_64-lambda-standard:nodejs20"
+    type            = "LINUX_LAMBDA_CONTAINER"
     privileged_mode = false
   }
 
