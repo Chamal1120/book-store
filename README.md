@@ -1,10 +1,9 @@
 # SkyOps Bookstore - A Serverless E-commerce Web Application
 
-
 ![frontend-codepipeline-status](https://book-store-skyops-build-badges.s3.us-east-1.amazonaws.com/badges/frontend-build.svg)
 ![backend-codepipeline-status](https://book-store-skyops-build-badges.s3.us-east-1.amazonaws.com/badges/backend-build.svg)
 
-![preview](./github-assets/preview.webp)
+![preview-skyops-bookstore](./github-assets/preview.webp)
 
 This is a demo e-commerce web application built with with Express and React and runs on top of serverless technologies. The application allows users to browse books, add them to a shopping cart, and purchase them.
 
@@ -20,7 +19,7 @@ This is done as a part of the SkyOps team project for the CCS3316 - Cloud Applic
 5. Hassle free cloud resource management with Terraform.
 
 # Architecture
-![](./github-assets/architecture.svg)
+![design-architecture](./github-assets/architecture.svg)
 
 # Deployment Instructions
 
@@ -84,11 +83,11 @@ terraform apply plan.out # Apply the terraform deployment
 > [!Note]
 > To maintain simplicity, we have not utilized any environment variable management service like AWS Secrets Manager which requires additional setting up of resources. If you wish to use them, you can modify the backend code to fetch the environment variables from the AWS Secrets Manager or AWS Parameter Store.
 
-# Read more about the individual components
+# Read more on
 
-[Frontend README](frontend/README.md)<br>
-[Backend README](backend/README.md)<br>
-[Terraform README](terraform/README.md)<br>
+* [Frontend](frontend/README.md)<br>
+* [Backend](backend/README.md)<br>
+* [Terraform](terraform/README.md)<br>
 
 # Contributing
 
