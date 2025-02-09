@@ -7,11 +7,12 @@ provider "aws" {
 # S3 Buckets
 ###############################
 
+# S3 bucket for the frontend source code
 resource "aws_s3_bucket" "front_end_source_bucket" {
-  bucket = "front-end-source"    
+  bucket = var.s3_bucket_name_front_source
 
   tags = {
-    Name        = "front_end_source_bucket"
+    Name        = var.s3_bucket_name_front_source
     Environment = "Production"
   }
 }
@@ -24,6 +25,7 @@ resource "aws_s3_bucket_versioning" "front_end_source_bucket_versioning" {
   }
 }
 
+# S3 bucket for the frontend build
 resource "aws_s3_bucket" "book_store_front_bucket" {
   bucket = var.s3_bucket_name_front
 }
@@ -69,11 +71,12 @@ resource "aws_s3_bucket_website_configuration" "book_store_front_website" {
   }
 }
 
+# S3 bucket for the backend build
 resource "aws_s3_bucket" "pipeline_bucket" {
-  bucket = var.s3_bucket_name
+  bucket = var.s3_bucket_name_back
 
   tags = {
-    Name        = var.s3_bucket_name
+    Name        = var.s3_bucket_name_back
     Environment = "Production"
   }
 }
@@ -86,6 +89,7 @@ resource "aws_s3_bucket_versioning" "pipeline_bucket_versioning" {
   }
 }
 
+# S3 bucket for storing build badges
 resource "aws_s3_bucket" "build_badges_bucket" {
   bucket = var.build_badges_bucket_name
 
@@ -228,6 +232,8 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamodb_full_access" {
 ###############################
 
 locals {
+
+  # Buildspec for frontend
   buildspec_front = <<EOF
 version: 0.2
 
@@ -262,6 +268,7 @@ phases:
       - aws s3 sync dist/ s3://$S3_BUCKET/ --delete
 EOF
 
+  # Buildspec for backend
   buildspec_back = <<EOF
 version: 0.2
 
@@ -306,6 +313,7 @@ artifacts:
 EOF
 }
 
+# codebuild for frontend
 resource "aws_codebuild_project" "book_store_front_build" {
   name          = "BookStoreFrontBuild"
   service_role  = aws_iam_role.codebuild_role.arn
@@ -343,6 +351,7 @@ resource "aws_codebuild_project" "book_store_front_build" {
 
 }
 
+# codebuild for backend
 resource "aws_codebuild_project" "express_app_build" {
   name          = "ExpressAppBuild"
   description   = "Build project for Express app on AWS Lambda"
@@ -375,6 +384,7 @@ resource "aws_codebuild_project" "express_app_build" {
 # CodePipeline
 ###############################
 
+# CodePipeline for frontend
 resource "aws_codepipeline" "book_store_front_pipeline" {
   name     = "BookStoreFrontPipeline"
   role_arn = aws_iam_role.codepipeline_role.arn
@@ -423,6 +433,7 @@ resource "aws_codepipeline" "book_store_front_pipeline" {
   }
 }
 
+# CodePipeline for backend
 resource "aws_codepipeline" "express_pipeline" {
   name     = "ExpressAppPipeline"
   role_arn = aws_iam_role.codepipeline_role.arn
@@ -488,6 +499,7 @@ resource "aws_lambda_function" "express_app" {
 ###############################
 # DynamoDB Tables
 ###############################
+
 resource "aws_dynamodb_table" "users" {
   name         = "users"
   billing_mode = "PAY_PER_REQUEST"
@@ -505,7 +517,7 @@ resource "aws_dynamodb_table" "users" {
 
   attribute {
     name = "id"
-    type = "S"  # This is used for the GSI
+    type = "S"
   }
 
   global_secondary_index {
@@ -514,7 +526,6 @@ resource "aws_dynamodb_table" "users" {
     projection_type = "ALL"
   }
 
-  # Dummy GSI for password to satisfy the requirement
   global_secondary_index {
     name            = "password-index"
     hash_key        = "password"
@@ -566,7 +577,7 @@ resource "aws_dynamodb_table" "books" {
     type = "S"
   }
 
-  # Adding GSIs for attributes that are not primary keys
+  # GSIs for attributes that are not primary keys
   global_secondary_index {
     name            = "author-index"
     hash_key        = "author"
@@ -643,7 +654,7 @@ resource "aws_dynamodb_table" "purchased_books" {
     type = "N"
   }
 
-  # GSI to query purchases by username
+  # GSIs for attributes that are not primary keys
   global_secondary_index {
     name            = "purchased_user-index"
     hash_key        = "purchased_user"
@@ -684,20 +695,20 @@ resource "aws_dynamodb_table" "purchased_books" {
 # API Gateway for Express Lambda Function
 ###############################
 
-# Create the API Gateway REST API
+# API Gateway - REST API
 resource "aws_api_gateway_rest_api" "express_api" {
   name        = "express_api"
   description = "API Gateway for Express Lambda function using Lambda proxy integration"
 }
 
-# Create a proxy resource to capture all paths
+# Proxy resource to capture all paths
 resource "aws_api_gateway_resource" "proxy" {
   rest_api_id = aws_api_gateway_rest_api.express_api.id
   parent_id   = aws_api_gateway_rest_api.express_api.root_resource_id
   path_part   = "{proxy+}"
 }
 
-# Create an ANY method on the proxy resource
+# ANY method on the proxy resource
 resource "aws_api_gateway_method" "any_method" {
   rest_api_id   = aws_api_gateway_rest_api.express_api.id
   resource_id   = aws_api_gateway_resource.proxy.id
@@ -705,7 +716,7 @@ resource "aws_api_gateway_method" "any_method" {
   authorization = "NONE"
 }
 
-# Integrate the ANY method with your Lambda function using AWS_PROXY integration
+# Integrate the ANY method with the Lambda function using AWS_PROXY integration
 resource "aws_api_gateway_integration" "lambda_proxy" {
   rest_api_id             = aws_api_gateway_rest_api.express_api.id
   resource_id             = aws_api_gateway_resource.proxy.id
@@ -726,14 +737,14 @@ resource "aws_api_gateway_deployment" "express_api_deployment" {
   }
 }
 
-# Explicitly create a stage for the deployment
+# Stage for the deployment
 resource "aws_api_gateway_stage" "express_api_stage" {
   stage_name    = "prod"
   rest_api_id   = aws_api_gateway_rest_api.express_api.id
   deployment_id = aws_api_gateway_deployment.express_api_deployment.id
 }
 
-# Allow API Gateway to invoke your Lambda function
+# Allow API Gateway to invoke the Lambda function
 resource "aws_lambda_permission" "apigw_lambda" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
@@ -764,7 +775,7 @@ variable "github_repo" {
 variable "github_branch" {
   description = "GitHub branch name"
   type        = string
-  default     = "main"
+  default     = "production"
 }
 
 variable "github_token" {
@@ -778,8 +789,13 @@ variable "s3_bucket_name_front" {
   type        = string
 }
 
-variable "s3_bucket_name" {
-  description = "S3 bucket for storing pipeline artifacts"
+variable "s3_bucket_name_front_source" {
+  description = "S3 bucket for storing frontend source"
+  type        = string
+}
+
+variable "s3_bucket_name_back" {
+  description = "S3 bucket for storing backend artifacts"
   type        = string
 }
 
