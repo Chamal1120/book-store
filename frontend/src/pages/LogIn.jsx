@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const apiUrl = "https://cbdt4kq7ji.execute-api.us-east-1.amazonaws.com/prod/api/";
+const apiUrl = "https://5tjgujomo0.execute-api.us-east-1.amazonaws.com/prod/api/";
 
 const LogIn = () => {
   const [username, setUsername] = useState('');
