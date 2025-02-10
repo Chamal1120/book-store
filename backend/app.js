@@ -7,7 +7,7 @@ const app = express();
 
 const allowedOrigins = [
   'http://book-store-skyops-terraform-front.s3-website-us-east-1.amazonaws.com',
-  'http://localhost:5173' // Only till we are developing locally
+  'http://localhost:5173' // This here is only for the development builds
 ];
 
 const corsOptions = {
