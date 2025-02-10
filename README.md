@@ -142,7 +142,7 @@ terraform apply plan.out # Apply the terraform deployment
 
 ## Why not integrate terraform to the ci/cd pipeline?
 
-Again, this is to maintain the simplicity of the demostration. It is possible to integrate terraform to the ci/cd pipeline to automate the deployment process using something like GitHub Workflows. However,
+It is possible to integrate terraform to the ci/cd pipeline to automate the deployment process using something like GitHub Workflows. However,
 
 * If both codepipeline triggering branch and terraform workflow triggering branch is same, that will result in a race condition on which finishes first or both might clash as resource allocation and resource utilization happens at the same time. AWS might handle this in a  smart way but we are not risking it.
 
