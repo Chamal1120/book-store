@@ -30,6 +30,7 @@ This is done as a part of the group project for the CCS3316 - Cloud Application 
 2. Backend **utilizes AWS lambda functions** to efficiently withstand high traffic while being cost effective.
 3. Stateless authentication with **JWT (JSON Web Tokens)**.
 4. Frontend is built with **React** and **Tailwind CSS** for a responsive and modern design and hosted on **AWS S3** for fast delivery while being cost-effective.
+5. Intelligent caching mechanism using browsers **localstorage** to reduce api calls by a lot.
 5. **AWS codebuild and codepipeline** for faster CI/CD with better integration with AWS
 5. Hassle free cloud resource management with **Terraform**.
 
